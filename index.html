@@ -787,7 +787,13 @@ input[type=date]{color-scheme:dark}
 // las dates terminaban en años raros (tipo 2742, 2843) → filtros y chart
 // rotos. Fix: preservar tipo original al cachear, robustecer _histParseDate
 // para detectar serials numéricos y rechazar años fuera de [2000, 2100].
-const APP_VERSION = '0004';
+// v.0005 (2026-05-04): hotfix de FORMATO al escribir al Excel. uploadToDrive
+// usaba `z:'m/d/yyyy'` (formato US) → las filas appendeadas se veían como
+// "4/15/2026" en lugar del formato latino "dd/mm/yyyy" que ya tenía el
+// Excel. Y la columna SUBTOTAL no tenía formato moneda, por eso aparecía
+// "-1000" en lugar de "-$ 1,000.00". Fix: cambiar a "dd/mm/yyyy" + formato
+// moneda RD con [Red] para negativos. Sin tocar nada más del flow de upload.
+const APP_VERSION = '0005';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1778,9 +1784,11 @@ async function uploadToDrive(){
 
       ws[XLSX.utils.encode_cell({r:insertRow,c:0})]={t:'s',v:e.suplidor};
       ws[XLSX.utils.encode_cell({r:insertRow,c:1})]={t:'s',v:e.concepto};
-      ws[XLSX.utils.encode_cell({r:insertRow,c:2})]={t:'n',v:excelSerial,z:'m/d/yyyy'};
+      // v.0005: formato latino dd/mm/yyyy (era 'm/d/yyyy' US, rompía consistencia con filas existentes)
+      ws[XLSX.utils.encode_cell({r:insertRow,c:2})]={t:'n',v:excelSerial,z:'dd/mm/yyyy'};
       ws[XLSX.utils.encode_cell({r:insertRow,c:3})]={t:'s',v:String(e.tiquete||'')};
-      ws[XLSX.utils.encode_cell({r:insertRow,c:4})]={t:'n',v:e.subtotal};
+      // v.0005: formato moneda RD$ con rojo para negativos (matchea las filas existentes del Excel)
+      ws[XLSX.utils.encode_cell({r:insertRow,c:4})]={t:'n',v:e.subtotal,z:'"$ "#,##0.00;[Red]"-$ "#,##0.00'};
       insertRow++;
     });
 
