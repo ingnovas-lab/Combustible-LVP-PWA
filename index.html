@@ -781,7 +781,13 @@ input[type=date]{color-scheme:dark}
 // las 4 categorías reales del Excel (GASOLINA PREMIUM / DIESEL PREMIUM /
 // EXTRACCIÓN EFECTIVO / ABONO) + gráfico interactivo Chart.js. Nuevo cache
 // 'lvp5hist' con todas las transacciones parseadas del Excel.
-const APP_VERSION = '0003';
+// v.0004 (2026-05-04): hotfix de parser de fechas. v.0003 convertía fechas
+// del Excel a string ANTES de parsearlas, y cuando el Excel guarda fechas
+// como número serial, el string "45942" no se reconocía como fecha → todas
+// las dates terminaban en años raros (tipo 2742, 2843) → filtros y chart
+// rotos. Fix: preservar tipo original al cachear, robustecer _histParseDate
+// para detectar serials numéricos y rechazar años fuera de [2000, 2100].
+const APP_VERSION = '0004';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1451,13 +1457,17 @@ function getBalanceCache(){
   try{ return JSON.parse(localStorage.getItem(BK)||'null'); }catch(e){ return null; }
 }
 
-/* ── HISTORIC CACHE (v.0003) ── */
+/* ── HISTORIC CACHE (v.0003 / v.0004) ── */
 // Array de transacciones parseadas del Excel maestro. Se actualiza cada vez
 // que refreshBalance() corre. Usado por pg-historico para mostrar el desglose
 // por categoría sin re-descargar el Excel.
+// v.0004: agregamos `v: APP_VERSION` al cache. Si el cache fue escrito por
+// una versión anterior (con bug de fechas), getHistCache lo trata como inválido
+// y fuerza re-descarga.
 function saveHistCache(transactions){
   try{
     localStorage.setItem(HK,JSON.stringify({
+      v:APP_VERSION,
       transactions:transactions,
       at:Date.now()
     }));
@@ -1468,7 +1478,13 @@ function saveHistCache(transactions){
 }
 
 function getHistCache(){
-  try{ return JSON.parse(localStorage.getItem(HK)||'null'); }catch(e){ return null; }
+  try{
+    const c=JSON.parse(localStorage.getItem(HK)||'null');
+    if(!c) return null;
+    // v.0004: si el cache es de versión anterior, descartarlo (fechas mal parseadas).
+    if(c.v!==APP_VERSION) return null;
+    return c;
+  }catch(e){ return null; }
 }
 
 function updateBalanceDisplay(){
@@ -1599,10 +1615,13 @@ async function refreshBalance(silent){
         // Solo coleccionamos para el cache si tienen al menos concepto y subtotal
         const concepto=String(getCell(r,1)||'').toUpperCase().trim();
         if(!concepto) continue;
+        // v.0004: preservar tipo original de la fecha (number si es serial Excel,
+        // string si es date string). _histParseDate lo maneja bien.
+        const fechaRaw=getCell(r,2);
         transactions.push({
           suplidor:String(getCell(r,0)||'').trim(),
           concepto:concepto,
-          fecha:String(getCell(r,2)||'').trim(),
+          fecha:(fechaRaw===null||fechaRaw===undefined) ? '' : fechaRaw,
           tiquete:String(getCell(r,3)||'').trim(),
           subtotal:subtotal
         });
@@ -1857,25 +1876,61 @@ const HIST_CATS={
   'ABONO':            {key:'abono',    color:'#22c55e', sign:1}
 };
 
-// Normaliza una fecha del Excel a Date(). El Excel puede tener:
-//   - "YYYY-MM-DD" (string ISO)
-//   - "DD/MM/YYYY" (string)
-//   - número serial de Excel (ej. 45000)
-// Si no parsea, retorna null.
+// v.0004: parser robusto. Acepta:
+//   - number (serial Excel: días desde 1900-01-01, ~45000 para 2025-2026).
+//   - "YYYY-MM-DD" (string ISO).
+//   - "DD/MM/YYYY" o "DD-MM-YYYY" (formato latino).
+//   - "MM/DD/YYYY" (formato US, parseado por new Date como fallback).
+//   - String numérico que parece serial Excel (ej "45942" → convertir a number).
+// Rechaza fechas con año fuera de [2000, 2100] (sanity check para evitar
+// el bug de v.0003 donde fechas malparsadas terminaban en año 2742, etc.).
 function _histParseDate(raw){
-  if(!raw) return null;
+  if(raw===null||raw===undefined||raw==='') return null;
+  // 1. Number directo (serial Excel)
   if(typeof raw==='number'){
-    // Serial de Excel: días desde 1900-01-01 (con bug del año bisiesto que +1)
-    const ms=(raw-25569)*86400*1000;
-    const d=new Date(ms);
-    return isNaN(d.getTime()) ? null : d;
+    return _excelSerialToDate(raw);
   }
   const s=String(raw).trim();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){ return new Date(s+'T12:00:00'); }
-  const m1=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if(m1){ return new Date(m1[3]+'-'+m1[2].padStart(2,'0')+'-'+m1[1].padStart(2,'0')+'T12:00:00'); }
+  if(!s) return null;
+  // 2. String que es solo dígitos y parece serial Excel (entre 20000=1954 y 70000=2091)
+  if(/^\d{4,6}$/.test(s)){
+    const num=parseInt(s,10);
+    if(num>=20000 && num<=70000){
+      return _excelSerialToDate(num);
+    }
+  }
+  // 3. ISO YYYY-MM-DD
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){
+    const d=new Date(parseInt(m[1])+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0')+'T12:00:00');
+    return _validateYear(d);
+  }
+  // 4. DD/MM/YYYY o DD-MM-YYYY (formato latino)
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m){
+    const d=new Date(m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')+'T12:00:00');
+    return _validateYear(d);
+  }
+  // 5. Fallback: native parser (puede entender "May 4, 2026" o similar)
   const d=new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+  return _validateYear(d);
+}
+
+// Convierte serial Excel a Date. Excel cuenta días desde 1900-01-01 (con bug
+// del año bisiesto que hace que el offset real sea 25569 desde 1970-01-01).
+function _excelSerialToDate(num){
+  const ms=(num-25569)*86400*1000;
+  const d=new Date(ms);
+  return _validateYear(d);
+}
+
+// Sanity check del año. Rechaza dates fuera de [2000, 2100] para evitar el bug
+// de v.0003 donde malparses producían años tipo 2742, 0004, etc.
+function _validateYear(d){
+  if(!d || isNaN(d.getTime())) return null;
+  const y=d.getFullYear();
+  if(y<2000 || y>2100) return null;
+  return d;
 }
 
 // Filtra transacciones del cache según el período activo.
@@ -1967,13 +2022,29 @@ function _histGroupForChart(transactions, grouping){
 
 // Render principal de pg-historico. Lee el cache, filtra por período activo,
 // llena los cards y dispara el render del chart.
-function renderHistorico(){
-  const cache=getHistCache();
+// v.0004: si el cache está vacío o es de versión vieja, auto-disparar
+// refreshBalance() para descargar de Drive y re-parsear con el parser nuevo.
+async function renderHistorico(){
+  let cache=getHistCache();
   if(!cache || !cache.transactions || !cache.transactions.length){
-    document.getElementById('hist-empty').style.display='block';
-    document.getElementById('hist-summary-card').style.display='none';
-    document.querySelectorAll('.hist-chart-card, .hist-type-card').forEach(el=>el.style.display='none');
-    return;
+    // Cache inválido. Si hay Drive conectado, intentar refresh silencioso.
+    if(typeof getGToken==='function' && getGToken()){
+      document.getElementById('hist-empty').style.display='block';
+      document.getElementById('hist-empty').innerHTML='<div class="hist-empty-icon">📥</div><p style="font-size:14px;margin-bottom:6px">Cargando del Drive...</p><p style="font-size:12px;color:var(--text3)">Re-parseando transacciones (v.0004 fix de fechas).</p>';
+      document.getElementById('hist-summary-card').style.display='none';
+      document.querySelectorAll('.hist-chart-card, .hist-type-card').forEach(el=>el.style.display='none');
+      try {
+        await refreshBalance(true);
+        cache=getHistCache();
+      } catch(e) { /* silent */ }
+    }
+    if(!cache || !cache.transactions || !cache.transactions.length){
+      document.getElementById('hist-empty').style.display='block';
+      document.getElementById('hist-empty').innerHTML='<div class="hist-empty-icon">📊</div><p style="font-size:14px;margin-bottom:6px">Sin datos cargados</p><p style="font-size:12px;color:var(--text3)">Conectá Drive y refrescá el balance para ver el historial.</p>';
+      document.getElementById('hist-summary-card').style.display='none';
+      document.querySelectorAll('.hist-chart-card, .hist-type-card').forEach(el=>el.style.display='none');
+      return;
+    }
   }
   document.getElementById('hist-empty').style.display='none';
   document.getElementById('hist-summary-card').style.display='block';
