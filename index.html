@@ -91,8 +91,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .db-tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
 .db-tbl th{background:var(--bg3);color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;font-size:9px;padding:8px 6px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:3;font-family:var(--font);white-space:nowrap}
 .db-tbl th.right{text-align:right}
-.db-tbl td{padding:8px 6px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle;white-space:nowrap}
-.db-tbl td.sup{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.db-tbl td{padding:8px 8px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle;white-space:nowrap}
+/* v.0009: nombre del suplidor sin truncar (el usuario scrollea horizontal si hace falta) */
+.db-tbl td.sup{white-space:nowrap;padding-right:14px}
 .db-tbl td.right{text-align:right;font-weight:600}
 .db-tbl td.gasolina-amt{color:var(--amber)}
 .db-tbl td.diesel-amt{color:var(--blue)}
@@ -519,9 +520,20 @@ input[type=date]{color-scheme:dark}
     <div class="back-btn" onclick="show('pg-home')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
-    <div><div class="topbar-title">Configuracion</div><div style="font-size:11px;color:var(--text2);margin-top:2px">Google Gemini &middot; Gratis</div></div>
+    <!-- v.0009: "Configuración" con tilde, sin subtitle "Google Gemini · Gratis" -->
+    <div><div class="topbar-title">Configuración</div></div>
   </div>
   <div class="body">
+
+    <!-- v.0009: "Forzar actualización" movido al INICIO (antes estaba al final) -->
+    <div>
+      <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:8px">App</div>
+      <button class="btn" onclick="forceAppUpdate()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Forzar actualización
+      </button>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Si la app parece atascada en una versión vieja, esto borra el caché local y recarga del servidor. No afecta tus datos ni la conexión con Drive.</div>
+    </div>
 
     <div class="alert alert-blue">
       <strong style="display:block;margin-bottom:8px">Como obtener tu API Key (gratis)</strong>
@@ -590,15 +602,7 @@ input[type=date]{color-scheme:dark}
       Cerrar sesion de Drive
     </button>
 
-    <!-- v.0008: forzar actualización (purga SW + caches + reload) -->
-    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:6px">
-      <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:8px">App</div>
-      <button class="btn" onclick="forceAppUpdate()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-        Forzar actualización
-      </button>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Si la app parece atascada en una versión vieja, esto borra el caché local y recarga del servidor. No afecta tus datos ni la conexión con Drive.</div>
-    </div>
+    <!-- v.0009: el botón "Forzar actualización" se movió al inicio del menú. -->
 
     <div style="font-size:11px;color:var(--text3);text-align:center;border-top:1px solid var(--border);padding-top:14px">
       1,500 analisis gratis por dia &middot; Sin tarjeta requerida
@@ -885,7 +889,12 @@ input[type=date]{color-scheme:dark}
 // botón "Forzar actualización" en Settings. Patrón heredado de CajaChica
 // con _withTimeout para que en Safari iOS (donde unregister/caches.delete
 // pueden colgar la promise) el flow no se atasque.
-const APP_VERSION = '0008';
+// v.0009 (2026-05-04): ajustes UX. (1) "Forzar actualización" movido al
+// inicio de pg-settings (antes era al final). (2) Topbar pg-settings:
+// "Configuracion" → "Configuración" con tilde, removido subtitle "Google
+// Gemini · Gratis". (3) pg-database: nombres de suplidor y concepto
+// completos (sin truncar). El usuario scrollea horizontal si hace falta.
+const APP_VERSION = '0009';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -2364,7 +2373,13 @@ function _dbRenderTable(){
   tbody.innerHTML=rows.map(t=>{
     const cat=HIST_CATS[t.concepto];
     const catKey=cat ? cat.key : 'unknown';
-    const tagLabel=cat ? (cat.key==='gasolina'?'Gas':cat.key==='diesel'?'Diesel':cat.key==='extraccion'?'Extracción':'Abono') : t.concepto;
+    // v.0009: labels completos (antes eran "Gas"/"Diesel"/etc cortos)
+    const tagLabel=cat ? (
+      cat.key==='gasolina' ? 'Gasolina Premium' :
+      cat.key==='diesel' ? 'Diesel Premium' :
+      cat.key==='extraccion' ? 'Extracción Efectivo' :
+      'Abono'
+    ) : t.concepto;
     const isAbono=cat && cat.sign>0;
     const subtotalAbs=Math.abs(t.subtotal||0);
     const sign=isAbono?'+':'-';
