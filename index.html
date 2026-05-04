@@ -12,6 +12,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
+<!-- v.0003: Chart.js para gráfico interactivo en pg-historico -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -36,6 +38,46 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .help-btn{align-self:flex-start;color:var(--amber);font-size:20px;font-weight:700;line-height:1;width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .gear-stack{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;align-self:flex-start}
 .version-tag{font-size:8px;color:var(--text);font-family:var(--mono);line-height:1}
+
+/* v.0003: pantalla pg-historico (gasto histórico segregado por categoría) */
+:root{--violet:#a855f7}
+.hist-pills{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.hist-pill{padding:8px 0;text-align:center;border-radius:100px;background:var(--bg2);border:1px solid var(--border);font-size:12px;cursor:pointer;color:var(--text2);font-weight:500;transition:all 0.15s;-webkit-tap-highlight-color:transparent}
+.hist-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.hist-summary{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-row.total{border-top:2px solid var(--border);margin-top:6px;padding-top:12px;font-weight:600}
+.hist-label{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px}
+.hist-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.hist-val{font-family:var(--mono);font-size:14px;font-weight:500}
+.hist-val.gasolina{color:var(--amber)}
+.hist-val.diesel{color:var(--blue)}
+.hist-val.extraccion{color:var(--violet)}
+.hist-val.abono{color:var(--green)}
+.hist-val.balance{color:var(--green);font-size:17px}
+.hist-val.balance.neg{color:var(--red)}
+.hist-chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px}
+.hist-chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.hist-chart-title{font-size:13px;font-weight:600}
+.hist-chart-tabs{display:flex;gap:6px}
+.hist-chart-tab{padding:5px 10px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);font-size:11px;cursor:pointer;color:var(--text2);-webkit-tap-highlight-color:transparent}
+.hist-chart-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.hist-chart-wrap{height:240px;position:relative}
+.hist-type-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px}
+.hist-type-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.hist-type-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hist-type-icon.gasolina{background:rgba(245,158,11,0.15);color:var(--amber)}
+.hist-type-icon.diesel{background:rgba(59,130,246,0.15);color:var(--blue)}
+.hist-type-icon.extraccion{background:rgba(168,85,247,0.15);color:var(--violet)}
+.hist-type-icon.abono{background:rgba(34,197,94,0.15);color:var(--green)}
+.hist-type-name{font-size:14px;font-weight:600}
+.hist-type-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hist-type-stat{text-align:center;padding:8px 4px;background:var(--bg3);border-radius:8px}
+.hist-type-stat-label{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.hist-type-stat-val{font-family:var(--mono);font-size:13px;font-weight:600;margin-top:3px}
+.hist-empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.hist-empty-icon{font-size:36px;opacity:0.4;margin-bottom:12px}
 .back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .icon-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
 
@@ -258,13 +300,15 @@ input[type=date]{color-scheme:dark}
     </div>
 
     <!-- BALANCE HERO CARD -->
-    <div class="balance-hero" id="balance-card">
+    <!-- v.0003: card es clicable (abre pg-historico). El botón ↻ tiene -->
+    <!-- event.stopPropagation() para que tocarlo NO abra la pantalla. -->
+    <div class="balance-hero" id="balance-card" onclick="show('pg-historico')" style="cursor:pointer">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div>
           <div class="balance-label">Balance disponible</div>
           <div class="balance-sub" id="balance-status">Toca para actualizar</div>
         </div>
-        <div class="refresh-btn" id="btn-refresh-balance" onclick="refreshBalance()">
+        <div class="refresh-btn" id="btn-refresh-balance" onclick="event.stopPropagation();refreshBalance()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="refresh-icon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         </div>
       </div>
@@ -278,6 +322,11 @@ input[type=date]{color-scheme:dark}
           <span class="balance-row-label">Pendientes locales</span>
           <span class="balance-row-val red" id="balance-pending">RD$ 0.00</span>
         </div>
+      </div>
+      <!-- v.0003: hint para indicar que el card es clicable -->
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;color:#a8c5f0;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+        <span>Toca para ver detalle</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>
 
@@ -583,6 +632,129 @@ input[type=date]{color-scheme:dark}
   </div>
 </div>
 
+<!-- PAGE: GASTO HISTÓRICO (v.0003) -->
+<!-- Se abre al tocar el balance card del home. Muestra el desglose de las 4 -->
+<!-- categorías reales del Excel (GASOLINA / DIESEL / EXTRACCIÓN / ABONO) + -->
+<!-- gráfico interactivo Chart.js con tabs Año/Mes/Semana. -->
+<div class="page" id="pg-historico">
+  <div class="topbar">
+    <div class="back-btn" onclick="show('pg-home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div>
+      <div class="topbar-title">Gasto histórico</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Base de datos</div>
+    </div>
+  </div>
+  <div class="body">
+
+    <!-- Filtro de período (4 pills distribuidos uniformemente) -->
+    <div class="hist-pills" id="hist-period-pills">
+      <div class="hist-pill active" data-period="all">Todo</div>
+      <div class="hist-pill" data-period="year">Este año</div>
+      <div class="hist-pill" data-period="6m">Últimos 6m</div>
+      <div class="hist-pill" data-period="30d">Últimos 30d</div>
+    </div>
+
+    <!-- Estado vacío (cache no cargado) -->
+    <div id="hist-empty" class="hist-empty" style="display:none">
+      <div class="hist-empty-icon">📊</div>
+      <p style="font-size:14px;margin-bottom:6px">Sin datos cargados</p>
+      <p style="font-size:12px;color:var(--text3)">Conectá Drive y refrescá el balance para ver el historial.</p>
+    </div>
+
+    <!-- Resumen de las 4 categorías -->
+    <div class="hist-summary" id="hist-summary-card">
+      <div class="hist-row">
+        <span class="hist-label"><span class="hist-dot" style="background:var(--amber)"></span>Gasolina Premium</span>
+        <span class="hist-val gasolina" id="hist-sum-gasolina">RD$ 0</span>
+      </div>
+      <div class="hist-row">
+        <span class="hist-label"><span class="hist-dot" style="background:var(--blue)"></span>Diesel Premium</span>
+        <span class="hist-val diesel" id="hist-sum-diesel">RD$ 0</span>
+      </div>
+      <div class="hist-row">
+        <span class="hist-label"><span class="hist-dot" style="background:var(--violet)"></span>Extracción efectivo</span>
+        <span class="hist-val extraccion" id="hist-sum-extraccion">RD$ 0</span>
+      </div>
+      <div class="hist-row">
+        <span class="hist-label"><span class="hist-dot" style="background:var(--green)"></span>Abonos</span>
+        <span class="hist-val abono" id="hist-sum-abono">RD$ 0</span>
+      </div>
+      <div class="hist-row total">
+        <span class="hist-label">Balance neto</span>
+        <span class="hist-val balance" id="hist-sum-balance">RD$ 0</span>
+      </div>
+    </div>
+
+    <!-- Gráfico interactivo Chart.js -->
+    <div class="hist-chart-card">
+      <div class="hist-chart-header">
+        <div class="hist-chart-title">Evolución</div>
+        <div class="hist-chart-tabs" id="hist-chart-tabs">
+          <div class="hist-chart-tab" data-grouping="year">Año</div>
+          <div class="hist-chart-tab active" data-grouping="month">Mes</div>
+          <div class="hist-chart-tab" data-grouping="week">Semana</div>
+        </div>
+      </div>
+      <div class="hist-chart-wrap">
+        <canvas id="hist-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- 4 cards detalladas -->
+    <div class="hist-type-card">
+      <div class="hist-type-header">
+        <div class="hist-type-icon gasolina">⛽</div>
+        <div class="hist-type-name" style="color:var(--amber)">Gasolina Premium</div>
+      </div>
+      <div class="hist-type-stats">
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Total</div><div class="hist-type-stat-val" style="color:var(--amber)" id="hist-detail-gasolina-total">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Tiquetes</div><div class="hist-type-stat-val" id="hist-detail-gasolina-count">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Promedio</div><div class="hist-type-stat-val" id="hist-detail-gasolina-avg">0</div></div>
+      </div>
+    </div>
+
+    <div class="hist-type-card">
+      <div class="hist-type-header">
+        <div class="hist-type-icon diesel">🚛</div>
+        <div class="hist-type-name" style="color:var(--blue)">Diesel Premium</div>
+      </div>
+      <div class="hist-type-stats">
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Total</div><div class="hist-type-stat-val" style="color:var(--blue)" id="hist-detail-diesel-total">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Tiquetes</div><div class="hist-type-stat-val" id="hist-detail-diesel-count">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Promedio</div><div class="hist-type-stat-val" id="hist-detail-diesel-avg">0</div></div>
+      </div>
+    </div>
+
+    <div class="hist-type-card">
+      <div class="hist-type-header">
+        <div class="hist-type-icon extraccion">💸</div>
+        <div class="hist-type-name" style="color:var(--violet)">Extracción efectivo</div>
+      </div>
+      <div class="hist-type-stats">
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Total</div><div class="hist-type-stat-val" style="color:var(--violet)" id="hist-detail-extraccion-total">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Movs</div><div class="hist-type-stat-val" id="hist-detail-extraccion-count">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Promedio</div><div class="hist-type-stat-val" id="hist-detail-extraccion-avg">0</div></div>
+      </div>
+    </div>
+
+    <div class="hist-type-card">
+      <div class="hist-type-header">
+        <div class="hist-type-icon abono">💵</div>
+        <div class="hist-type-name" style="color:var(--green)">Abonos</div>
+      </div>
+      <div class="hist-type-stats">
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Total</div><div class="hist-type-stat-val" style="color:var(--green)" id="hist-detail-abono-total">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Cantidad</div><div class="hist-type-stat-val" id="hist-detail-abono-count">0</div></div>
+        <div class="hist-type-stat"><div class="hist-type-stat-label">Promedio</div><div class="hist-type-stat-val" id="hist-detail-abono-avg">0</div></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px" id="hist-footer">v.0003 · Datos de Control_de_combustible.xlsx</div>
+  </div>
+</div>
+
 <!-- DELETE MODAL -->
 <div class="modal-bg" id="modal-del">
   <div class="modal">
@@ -605,10 +777,15 @@ input[type=date]{color-scheme:dark}
 // v.0002 (2026-05-04): UI topbar (botón "?" + tag de versión), pantalla pg-help,
 // campo Suplidor con autocomplete (<input list> en vez de <select>) que memoriza
 // suplidores nuevos en localStorage 'lvp5sup'.
-const APP_VERSION = '0002';
+// v.0003 (2026-05-04): pantalla pg-historico al tocar el balance card, con
+// las 4 categorías reales del Excel (GASOLINA PREMIUM / DIESEL PREMIUM /
+// EXTRACCIÓN EFECTIVO / ABONO) + gráfico interactivo Chart.js. Nuevo cache
+// 'lvp5hist' con todas las transacciones parseadas del Excel.
+const APP_VERSION = '0003';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
+const HK='lvp5hist'; // HK = historic cache de transacciones del Excel (v.0003)
 
 /* ── STATE ── */
 let entries=[], curPhoto=null, delId=null, selectedModel='', pendingData=null, lastRaw='';
@@ -648,6 +825,7 @@ function show(id){
     document.getElementById('ab-err').style.display='none';
     setTimeout(()=>document.getElementById('ab-amt').focus(),100);
   }
+  if(id==='pg-historico') renderHistorico();
 }
 
 /* ── TOAST ── */
@@ -1273,6 +1451,26 @@ function getBalanceCache(){
   try{ return JSON.parse(localStorage.getItem(BK)||'null'); }catch(e){ return null; }
 }
 
+/* ── HISTORIC CACHE (v.0003) ── */
+// Array de transacciones parseadas del Excel maestro. Se actualiza cada vez
+// que refreshBalance() corre. Usado por pg-historico para mostrar el desglose
+// por categoría sin re-descargar el Excel.
+function saveHistCache(transactions){
+  try{
+    localStorage.setItem(HK,JSON.stringify({
+      transactions:transactions,
+      at:Date.now()
+    }));
+  }catch(e){
+    // localStorage lleno: si es por exceso, intentar limpiar el cache anterior
+    console.warn('[saveHistCache]',e);
+  }
+}
+
+function getHistCache(){
+  try{ return JSON.parse(localStorage.getItem(HK)||'null'); }catch(e){ return null; }
+}
+
 function updateBalanceDisplay(){
   const cache=getBalanceCache();
   const pendingTotal=entries.reduce((s,e)=>s+e.subtotal,0); // negative number (gastos)
@@ -1375,27 +1573,46 @@ async function refreshBalance(silent){
     // Parse with cached values (not formulas)
     const wb=XLSX.read(buf,{type:'array',cellDates:false});
 
-    // Calculate balance: sum ALL values in column E of BASE DE DATOS sheet
+    // v.0003: parsear TODAS las filas (no solo sumar columna E) para poder
+    // mostrarlas en pg-historico segregadas por las 4 categorías de columna B.
+    // Schema esperado: A=SUPLIDOR, B=CONCEPTO, C=FECHA, D=TIQUETE, E=SUBTOTAL.
     let balance=null;
+    let transactions=[];
     const base=wb.SheetNames.find(n=>n.toUpperCase().includes('BASE'))||wb.SheetNames.find(n=>n.toUpperCase().includes('DATOS'));
     if(base){
       const ws=wb.Sheets[base];
       const range=XLSX.utils.decode_range(ws['!ref']||'A1');
       balance=0;
-      // Column E = index 4 (zero-based)
-      for(let r=range.s.r;r<=range.e.r;r++){
-        const cell=ws[XLSX.utils.encode_cell({r,c:4})];
-        if(!cell) continue;
-        // Get the value (prefer calculated value over formula)
-        let v=cell.v;
+      const getCell=(r,c)=>{
+        const cell=ws[XLSX.utils.encode_cell({r,c})];
+        return cell ? cell.v : null;
+      };
+      const parseNum=(v)=>{
         if(typeof v==='string') v=parseFloat(v.replace(/,/g,''));
-        if(typeof v==='number' && !isNaN(v) && isFinite(v)){
-          balance+=v;
-        }
+        return (typeof v==='number' && !isNaN(v) && isFinite(v)) ? v : null;
+      };
+      // Asumimos primera fila = header. Empezamos desde la segunda.
+      for(let r=range.s.r;r<=range.e.r;r++){
+        const subtotal=parseNum(getCell(r,4));
+        if(subtotal===null) continue; // skip headers o filas vacías
+        balance+=subtotal;
+        // Solo coleccionamos para el cache si tienen al menos concepto y subtotal
+        const concepto=String(getCell(r,1)||'').toUpperCase().trim();
+        if(!concepto) continue;
+        transactions.push({
+          suplidor:String(getCell(r,0)||'').trim(),
+          concepto:concepto,
+          fecha:String(getCell(r,2)||'').trim(),
+          tiquete:String(getCell(r,3)||'').trim(),
+          subtotal:subtotal
+        });
       }
     }
 
     if(balance===null||isNaN(balance)) throw new Error('No se pudo calcular el balance (hoja BASE DE DATOS no encontrada o vacia)');
+
+    // v.0003: cachear transacciones para pg-historico
+    saveHistCache(transactions);
 
     saveBalanceCache(balance);
     updateBalanceDisplay();
@@ -1619,6 +1836,265 @@ document.addEventListener('visibilitychange',()=>{
     } else {
       updateBalanceDisplay();
     }
+  }
+});
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* v.0003 — pg-historico (gasto histórico segregado por categoría + chart)    */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+let _histChart=null;          // instancia activa de Chart.js
+let _histPeriod='all';        // filtro de período activo (all/year/6m/30d)
+let _histGrouping='month';    // agrupación del chart (year/month/week)
+
+// Categorías de la columna B (CONCEPTO) y su mapeo visual.
+// 'sign' indica si el subtotal viene como negativo (gasto) o positivo (ingreso).
+const HIST_CATS={
+  'GASOLINA PREMIUM': {key:'gasolina', color:'#f59e0b', sign:-1},
+  'DIESEL PREMIUM':   {key:'diesel',   color:'#3b82f6', sign:-1},
+  'EXTRACCIÓN EFECTIVO': {key:'extraccion', color:'#a855f7', sign:-1},
+  'EXTRACCION EFECTIVO': {key:'extraccion', color:'#a855f7', sign:-1}, // sin tilde por si acaso
+  'ABONO':            {key:'abono',    color:'#22c55e', sign:1}
+};
+
+// Normaliza una fecha del Excel a Date(). El Excel puede tener:
+//   - "YYYY-MM-DD" (string ISO)
+//   - "DD/MM/YYYY" (string)
+//   - número serial de Excel (ej. 45000)
+// Si no parsea, retorna null.
+function _histParseDate(raw){
+  if(!raw) return null;
+  if(typeof raw==='number'){
+    // Serial de Excel: días desde 1900-01-01 (con bug del año bisiesto que +1)
+    const ms=(raw-25569)*86400*1000;
+    const d=new Date(ms);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const s=String(raw).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){ return new Date(s+'T12:00:00'); }
+  const m1=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m1){ return new Date(m1[3]+'-'+m1[2].padStart(2,'0')+'-'+m1[1].padStart(2,'0')+'T12:00:00'); }
+  const d=new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Filtra transacciones del cache según el período activo.
+function _histFilterByPeriod(transactions, period){
+  if(period==='all') return transactions;
+  const now=new Date();
+  let cutoff;
+  if(period==='year'){
+    cutoff=new Date(now.getFullYear(),0,1);
+  } else if(period==='6m'){
+    cutoff=new Date(now.getFullYear(),now.getMonth()-5,1);
+  } else if(period==='30d'){
+    cutoff=new Date(now.getTime()-30*86400*1000);
+  } else {
+    return transactions;
+  }
+  return transactions.filter(t=>{
+    const d=_histParseDate(t.fecha);
+    return d && d>=cutoff;
+  });
+}
+
+// Agrupa por categoría y calcula totales/conteo/promedio.
+function _histGroupByCategory(transactions){
+  const result={
+    gasolina:{total:0,count:0},
+    diesel:{total:0,count:0},
+    extraccion:{total:0,count:0},
+    abono:{total:0,count:0}
+  };
+  for(const t of transactions){
+    const cat=HIST_CATS[t.concepto];
+    if(!cat) continue;
+    result[cat.key].total += Math.abs(t.subtotal);
+    result[cat.key].count++;
+  }
+  return result;
+}
+
+// Agrupa por período (year/month/week) para el chart.
+// Retorna {labels:[...], datasets:{gasolina:[...], diesel:[...], extraccion:[...], abono:[...]}}.
+function _histGroupForChart(transactions, grouping){
+  const buckets=new Map(); // key → {gasolina, diesel, extraccion, abono}
+  const sortKey=(d)=>{
+    if(grouping==='year') return String(d.getFullYear());
+    if(grouping==='week'){
+      // ISO week: año-semana
+      const tmp=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+      tmp.setDate(tmp.getDate()+4-(tmp.getDay()||7));
+      const yearStart=new Date(tmp.getFullYear(),0,1);
+      const week=Math.ceil(((tmp-yearStart)/86400000+1)/7);
+      return tmp.getFullYear()+'-W'+String(week).padStart(2,'0');
+    }
+    // month default
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  };
+  const labelFormat=(key,d)=>{
+    if(grouping==='year') return key;
+    if(grouping==='week') return key.split('-W')[1]+' \''+key.slice(2,4);
+    // month: "Ene 26"
+    const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return months[d.getMonth()]+' \''+String(d.getFullYear()).slice(2);
+  };
+
+  for(const t of transactions){
+    const d=_histParseDate(t.fecha);
+    if(!d) continue;
+    const cat=HIST_CATS[t.concepto];
+    if(!cat) continue;
+    const key=sortKey(d);
+    if(!buckets.has(key)){
+      buckets.set(key,{_d:d,gasolina:0,diesel:0,extraccion:0,abono:0});
+    }
+    buckets.get(key)[cat.key] += Math.abs(t.subtotal);
+  }
+
+  // Ordenar por key cronológicamente
+  const sortedKeys=Array.from(buckets.keys()).sort();
+  const labels=sortedKeys.map(k=>labelFormat(k,buckets.get(k)._d));
+
+  return {
+    labels,
+    gasolina:sortedKeys.map(k=>buckets.get(k).gasolina),
+    diesel:sortedKeys.map(k=>buckets.get(k).diesel),
+    extraccion:sortedKeys.map(k=>buckets.get(k).extraccion),
+    abono:sortedKeys.map(k=>buckets.get(k).abono)
+  };
+}
+
+// Render principal de pg-historico. Lee el cache, filtra por período activo,
+// llena los cards y dispara el render del chart.
+function renderHistorico(){
+  const cache=getHistCache();
+  if(!cache || !cache.transactions || !cache.transactions.length){
+    document.getElementById('hist-empty').style.display='block';
+    document.getElementById('hist-summary-card').style.display='none';
+    document.querySelectorAll('.hist-chart-card, .hist-type-card').forEach(el=>el.style.display='none');
+    return;
+  }
+  document.getElementById('hist-empty').style.display='none';
+  document.getElementById('hist-summary-card').style.display='block';
+  document.querySelectorAll('.hist-chart-card, .hist-type-card').forEach(el=>el.style.display='');
+
+  const filtered=_histFilterByPeriod(cache.transactions, _histPeriod);
+  const stats=_histGroupByCategory(filtered);
+
+  // Resumen
+  const setVal=(id,v,sign)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const fmt=(sign||'')+'RD$ '+v.toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:0});
+    el.textContent=fmt;
+  };
+  setVal('hist-sum-gasolina', stats.gasolina.total, '- ');
+  setVal('hist-sum-diesel',   stats.diesel.total,   '- ');
+  setVal('hist-sum-extraccion', stats.extraccion.total, '- ');
+  setVal('hist-sum-abono',    stats.abono.total,    '+ ');
+
+  const balance = stats.abono.total - stats.gasolina.total - stats.diesel.total - stats.extraccion.total;
+  const balanceEl=document.getElementById('hist-sum-balance');
+  if(balanceEl){
+    balanceEl.textContent='RD$ '+Math.abs(balance).toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:0});
+    balanceEl.classList.toggle('neg', balance<0);
+  }
+
+  // Cards detalladas
+  const fillDetail=(prefix, data, label)=>{
+    const totalEl=document.getElementById('hist-detail-'+prefix+'-total');
+    const countEl=document.getElementById('hist-detail-'+prefix+'-count');
+    const avgEl=document.getElementById('hist-detail-'+prefix+'-avg');
+    if(totalEl) totalEl.textContent = data.total.toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:0});
+    if(countEl) countEl.textContent = data.count;
+    if(avgEl) avgEl.textContent = data.count>0 ? Math.round(data.total/data.count).toLocaleString('es-DO') : '0';
+  };
+  fillDetail('gasolina', stats.gasolina);
+  fillDetail('diesel', stats.diesel);
+  fillDetail('extraccion', stats.extraccion);
+  fillDetail('abono', stats.abono);
+
+  // Footer
+  const ftr=document.getElementById('hist-footer');
+  if(ftr) ftr.textContent=APP_VERSION_LABEL+' · Datos de Control_de_combustible.xlsx';
+
+  // Chart
+  _renderHistChart(filtered);
+}
+
+// Renderiza/actualiza el chart con los datos filtrados.
+function _renderHistChart(transactions){
+  const ctx=document.getElementById('hist-chart');
+  if(!ctx || typeof Chart==='undefined') return;
+  const data=_histGroupForChart(transactions, _histGrouping);
+
+  // Si ya existe un chart, actualizar en lugar de re-crear (mejor performance + animación)
+  if(_histChart){
+    _histChart.data.labels=data.labels;
+    _histChart.data.datasets[0].data=data.gasolina;
+    _histChart.data.datasets[1].data=data.diesel;
+    _histChart.data.datasets[2].data=data.extraccion;
+    _histChart.data.datasets[3].data=data.abono;
+    _histChart.update();
+    return;
+  }
+
+  _histChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:data.labels,
+      datasets:[
+        {label:'Gasolina',  data:data.gasolina,  backgroundColor:HIST_CATS['GASOLINA PREMIUM'].color, stack:'gastos'},
+        {label:'Diesel',    data:data.diesel,    backgroundColor:HIST_CATS['DIESEL PREMIUM'].color,   stack:'gastos'},
+        {label:'Extracción',data:data.extraccion,backgroundColor:HIST_CATS['EXTRACCIÓN EFECTIVO'].color,stack:'gastos'},
+        {label:'Abonos',    data:data.abono,     backgroundColor:HIST_CATS['ABONO'].color,            stack:'ingresos'}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:8,boxWidth:10}},
+        tooltip:{callbacks:{label:(ctx)=>ctx.dataset.label+': RD$ '+ctx.raw.toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:0})}}
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}},
+        y:{stacked:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#94a3b8',font:{size:10},callback:(v)=>'RD$ '+(v/1000).toFixed(0)+'K'}}
+      }
+    }
+  });
+}
+
+// Event listeners para pills de período y tabs del chart
+document.addEventListener('DOMContentLoaded',()=>{
+  const pillsEl=document.getElementById('hist-period-pills');
+  if(pillsEl){
+    pillsEl.addEventListener('click',(e)=>{
+      const pill=e.target.closest('.hist-pill');
+      if(!pill) return;
+      pillsEl.querySelectorAll('.hist-pill').forEach(p=>p.classList.remove('active'));
+      pill.classList.add('active');
+      _histPeriod=pill.dataset.period;
+      renderHistorico();
+    });
+  }
+  const tabsEl=document.getElementById('hist-chart-tabs');
+  if(tabsEl){
+    tabsEl.addEventListener('click',(e)=>{
+      const tab=e.target.closest('.hist-chart-tab');
+      if(!tab) return;
+      tabsEl.querySelectorAll('.hist-chart-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      _histGrouping=tab.dataset.grouping;
+      // Re-render solo el chart con el nuevo grouping (sin cambiar el período)
+      const cache=getHistCache();
+      if(cache && cache.transactions){
+        const filtered=_histFilterByPeriod(cache.transactions, _histPeriod);
+        _renderHistChart(filtered);
+      }
+    });
   }
 });
 </script>
