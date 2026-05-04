@@ -307,9 +307,13 @@ input[type=date]{color-scheme:dark}
 <!-- PAGE: HOME -->
 <div class="page on" id="pg-home">
   <div class="topbar">
-    <div style="flex:1;min-width:0">
-      <div class="topbar-title">&#9981; Combustible LVP</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">Ing. Joel Novas</div>
+    <!-- v.0010: emoji separado en columna propia → "Ing. Joel Novas" queda alineado debajo de "Combustible LVP", no del emoji. Más respiro vertical. -->
+    <div style="flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px">
+      <div style="font-size:18px;line-height:1.2;flex-shrink:0">&#9981;</div>
+      <div style="min-width:0">
+        <div class="topbar-title">Combustible LVP</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:6px">Ing. Joel Novas</div>
+      </div>
     </div>
     <!-- v.0002: botón "?" → guía de uso -->
     <div class="help-btn" onclick="show('pg-help')" title="Guía de uso">?</div>
@@ -894,7 +898,11 @@ input[type=date]{color-scheme:dark}
 // "Configuracion" → "Configuración" con tilde, removido subtitle "Google
 // Gemini · Gratis". (3) pg-database: nombres de suplidor y concepto
 // completos (sin truncar). El usuario scrollea horizontal si hace falta.
-const APP_VERSION = '0009';
+// v.0010 (2026-05-04): ajuste mínimo del topbar de pg-home. Separar el
+// emoji ⛽ del texto "Combustible LVP" en columnas con flexbox, así
+// "Ing. Joel Novas" queda alineado debajo de la "C" de Combustible (no
+// del emoji). Más espacio vertical entre las dos líneas.
+const APP_VERSION = '0010';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
