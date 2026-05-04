@@ -78,6 +78,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .hist-type-stat-val{font-family:var(--mono);font-size:13px;font-weight:600;margin-top:3px}
 .hist-empty{text-align:center;padding:40px 20px;color:var(--text2)}
 .hist-empty-icon{font-size:36px;opacity:0.4;margin-bottom:12px}
+
+/* v.0007: pg-database (tabla completa con buscador) */
+.btn-db{padding:14px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;width:100%;margin-top:6px;-webkit-tap-highlight-color:transparent}
+.btn-db:active{background:var(--bg3)}
+.db-search{position:relative;margin-bottom:4px}
+.db-search-input{width:100%;padding:10px 14px 10px 36px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:var(--font);outline:none}
+.db-search-input:focus{border-color:var(--blue)}
+.db-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text2);pointer-events:none}
+.db-stat-line{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text2);padding:0 4px;margin-bottom:4px}
+.db-tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:auto;max-height:65vh}
+.db-tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+.db-tbl th{background:var(--bg3);color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;font-size:9px;padding:8px 6px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:3;font-family:var(--font);white-space:nowrap}
+.db-tbl th.right{text-align:right}
+.db-tbl td{padding:8px 6px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle;white-space:nowrap}
+.db-tbl td.sup{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.db-tbl td.right{text-align:right;font-weight:600}
+.db-tbl td.gasolina-amt{color:var(--amber)}
+.db-tbl td.diesel-amt{color:var(--blue)}
+.db-tbl td.extraccion-amt{color:var(--violet)}
+.db-tbl td.abono-amt{color:var(--green)}
+.db-tag{display:inline-block;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;font-family:var(--font);white-space:nowrap}
+.db-tag.gasolina{background:rgba(245,158,11,0.15);color:var(--amber)}
+.db-tag.diesel{background:rgba(59,130,246,0.15);color:var(--blue)}
+.db-tag.extraccion{background:rgba(168,85,247,0.15);color:var(--violet)}
+.db-tag.abono{background:rgba(34,197,94,0.15);color:var(--green)}
+.db-tag.unknown{background:var(--bg3);color:var(--text2)}
 .back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .icon-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
 
@@ -751,21 +777,62 @@ input[type=date]{color-scheme:dark}
       </div>
     </div>
 
+    <!-- v.0007: botón para ver la base de datos completa en formato tabla -->
+    <button class="btn btn-db" onclick="show('pg-database')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>
+      Ver Base de Datos completa
+    </button>
+
     <div style="text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px" id="hist-footer">v.0003 · Datos de Control_de_combustible.xlsx</div>
   </div>
 </div>
 
-<!-- DELETE MODAL -->
-<div class="modal-bg" id="modal-del">
-  <div class="modal">
-    <div style="font-size:15px;font-weight:600;margin-bottom:6px">Eliminar registro</div>
-    <div style="font-size:13px;color:var(--text2)">Esta accion no se puede deshacer.</div>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-red" onclick="doDel()">Eliminar</button>
+<!-- PAGE: BASE DE DATOS (v.0007) -->
+<!-- Tabla compacta con todas las transacciones del Excel maestro. -->
+<!-- Buscador filtra por suplidor / fecha / tiquete. -->
+<div class="page" id="pg-database">
+  <div class="topbar">
+    <div class="back-btn" onclick="show('pg-historico')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div>
+      <div class="topbar-title">Base de Datos</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px" id="db-count">0 transacciones</div>
     </div>
   </div>
+  <div class="body">
+    <div class="db-search">
+      <svg class="db-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="db-search-input" class="db-search-input" placeholder="Buscar suplidor, fecha, tiquete..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="db-stat-line">
+      <span>Más recientes arriba</span>
+      <span style="font-family:var(--mono)" id="db-shown-count">— filas</span>
+    </div>
+    <div id="db-empty" class="hist-empty" style="display:none">
+      <div class="hist-empty-icon">📊</div>
+      <p style="font-size:14px;margin-bottom:6px">Sin datos cargados</p>
+      <p style="font-size:12px;color:var(--text3)">Conectá Drive y refrescá el balance.</p>
+    </div>
+    <div class="db-tbl-wrap" id="db-tbl-wrap">
+      <table class="db-tbl">
+        <thead>
+          <tr>
+            <th>Suplidor</th>
+            <th>Concepto</th>
+            <th>Fecha</th>
+            <th>Tiq</th>
+            <th class="right">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="db-tbody"></tbody>
+      </table>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px" id="db-footer">v.0007 · Datos de Control_de_combustible.xlsx</div>
+  </div>
 </div>
+
+<!-- v.0007: modal-del removido. La app es append-only — los cambios se hacen directo en el Excel. -->
 
 <div id="toast"></div>
 
@@ -799,14 +866,19 @@ input[type=date]{color-scheme:dark}
 // día actual. Por eso un abono del 01/04/2026 se agrupaba en marzo en el
 // chart. Fix: extraer Y/M/D usando getUTC*() y reconstruir Date local al
 // mediodía para que get*() local retorne el día correcto.
-const APP_VERSION = '0006';
+// v.0007 (2026-05-04): (a) cleanup: quitar fotos de los entries guardados y
+// quitar el botón "Eliminar" de pg-history (la app es append-only, los
+// cambios se hacen directo en el Excel). (b) Pantalla nueva pg-database
+// con tabla compacta de las 309+ transacciones del Excel + buscador.
+// Botón "Ver Base de Datos completa" al final de pg-historico.
+const APP_VERSION = '0007';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
 const HK='lvp5hist'; // HK = historic cache de transacciones del Excel (v.0003)
 
 /* ── STATE ── */
-let entries=[], curPhoto=null, delId=null, selectedModel='', pendingData=null, lastRaw='';
+let entries=[], curPhoto=null, selectedModel='', pendingData=null, lastRaw=''; // v.0007: delId removido
 
 /* ── INIT ── */
 (function init(){
@@ -844,6 +916,7 @@ function show(id){
     setTimeout(()=>document.getElementById('ab-amt').focus(),100);
   }
   if(id==='pg-historico') renderHistorico();
+  if(id==='pg-database') renderDatabase();
 }
 
 /* ── TOAST ── */
@@ -1147,10 +1220,13 @@ function saveEntry(){
   // para que aparezca como sugerencia en el datalist en próximas cargas.
   addCustomSup(sup);
 
+  // v.0007: ya no guardamos `photo` en el entry. La foto se usa solo durante
+  // el flujo (Gemini la analiza, el usuario la ve en el confirm), pero no
+  // se persiste en localStorage. Ahorra espacio y simplifica.
   entries.unshift({
     id:Date.now(), suplidor:sup.toUpperCase(), concepto:con,
     fecha, tiquete:tiq, subtotal:-Math.abs(amt),
-    photo:curPhoto?.url||null, at:new Date().toISOString()
+    at:new Date().toISOString()
   });
   save(); curPhoto=null; pendingData=null;
   toast('✓ Registro guardado');
@@ -1168,6 +1244,7 @@ function saveAbono(){
   if(!amt||amt<=0){ errEl.textContent='Ingresa un monto valido mayor a cero'; errEl.style.display='block'; return; }
   errEl.style.display='none';
 
+  // v.0007: sin campo photo (los abonos nunca tenían foto, pero limpiamos por consistencia)
   entries.unshift({
     id:Date.now(),
     suplidor:sup.toUpperCase(),
@@ -1175,7 +1252,6 @@ function saveAbono(){
     fecha,
     tiquete:'',
     subtotal:Math.abs(amt),  // POSITIVE for abonos
-    photo:null,
     isAbono:true,
     at:new Date().toISOString()
   });
@@ -1251,9 +1327,6 @@ function refreshHistory(){
           <span style="font-size:11px;color:var(--text2)">${fmtD(e.fecha)}</span>
           ${e.tiquete?`<span style="font-size:11px;color:var(--text3);font-family:var(--mono)">#${e.tiquete}</span>`:''}
         </div>
-        <div style="margin-top:10px;display:flex;justify-content:flex-end">
-          <button class="btn btn-red" style="width:auto;padding:6px 14px;font-size:12px" onclick="askDel(${e.id})">Eliminar</button>
-        </div>
       </div>
     </div>`;
   }).join('')+`
@@ -1263,16 +1336,10 @@ function refreshHistory(){
     </div>`;
 }
 
-/* ── DELETE ── */
-function askDel(id){ delId=id; document.getElementById('modal-del').classList.add('show'); }
-function closeModal(){ document.getElementById('modal-del').classList.remove('show'); delId=null; }
-function doDel(){
-  if(delId===null) return;
-  entries=entries.filter(e=>e.id!==delId);
-  save(); delId=null; closeModal();
-  refreshHistory(); refreshHome();
-  toast('Registro eliminado');
-}
+/* v.0007: las funciones askDel/doDel y el modal-del fueron removidos. La app
+   es append-only por diseño — los cambios se hacen directo en el Excel
+   maestro de Drive. */
+function closeModal(){ /* legacy: por si algún botón llama a esto, no rompe */ }
 
 /* ── EXPORT EXCEL ── */
 function doExport(){
@@ -2187,7 +2254,119 @@ document.addEventListener('DOMContentLoaded',()=>{
       }
     });
   }
+  // v.0007: buscador de pg-database
+  const dbInput=document.getElementById('db-search-input');
+  if(dbInput){
+    dbInput.addEventListener('input',()=>{
+      _dbFilter=dbInput.value.trim().toLowerCase();
+      _dbRenderTable();
+    });
+  }
 });
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* v.0007 — pg-database (tabla completa con buscador)                         */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+let _dbFilter=''; // texto del buscador (lowercase)
+
+// Render principal de pg-database. Llamado desde show('pg-database').
+async function renderDatabase(){
+  let cache=getHistCache();
+  if(!cache || !cache.transactions || !cache.transactions.length){
+    if(typeof getGToken==='function' && getGToken()){
+      try { await refreshBalance(true); cache=getHistCache(); } catch(e){}
+    }
+  }
+  const ftr=document.getElementById('db-footer');
+  if(ftr) ftr.textContent=APP_VERSION_LABEL+' · Datos de Control_de_combustible.xlsx';
+
+  if(!cache || !cache.transactions || !cache.transactions.length){
+    document.getElementById('db-empty').style.display='block';
+    document.getElementById('db-tbl-wrap').style.display='none';
+    document.getElementById('db-count').textContent='0 transacciones';
+    document.getElementById('db-shown-count').textContent='— filas';
+    return;
+  }
+  document.getElementById('db-empty').style.display='none';
+  document.getElementById('db-tbl-wrap').style.display='';
+
+  document.getElementById('db-count').textContent=cache.transactions.length+' transaccion'+(cache.transactions.length!==1?'es':'');
+  // Reset del filtro al entrar (limpia buscador)
+  const inp=document.getElementById('db-search-input');
+  if(inp){ inp.value=''; _dbFilter=''; }
+  _dbRenderTable();
+}
+
+// Render del tbody según el filtro activo. Lee del cache cada vez (rápido,
+// porque está en memoria desde getHistCache).
+function _dbRenderTable(){
+  const cache=getHistCache();
+  if(!cache || !cache.transactions) return;
+  const tbody=document.getElementById('db-tbody');
+  if(!tbody) return;
+
+  // Sort cronológicamente desc (más reciente arriba)
+  const sorted=[...cache.transactions].sort((a,b)=>{
+    const da=_histParseDate(a.fecha); const db=_histParseDate(b.fecha);
+    if(!da && !db) return 0;
+    if(!da) return 1;
+    if(!db) return -1;
+    return db.getTime()-da.getTime();
+  });
+
+  // Filter por buscador
+  let rows=sorted;
+  if(_dbFilter){
+    const f=_dbFilter;
+    rows=sorted.filter(t=>{
+      const sup=String(t.suplidor||'').toLowerCase();
+      const con=String(t.concepto||'').toLowerCase();
+      const tiq=String(t.tiquete||'').toLowerCase();
+      const fechaStr=_dbFormatFecha(t.fecha).toLowerCase();
+      return sup.includes(f) || con.includes(f) || tiq.includes(f) || fechaStr.includes(f);
+    });
+  }
+
+  document.getElementById('db-shown-count').textContent=
+    rows.length===cache.transactions.length
+      ? rows.length+' filas'
+      : rows.length+' de '+cache.transactions.length+' filas';
+
+  // Build HTML
+  if(rows.length===0){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);font-style:italic;padding:20px">Sin coincidencias para "'+_escHtml(_dbFilter)+'"</td></tr>';
+    return;
+  }
+  tbody.innerHTML=rows.map(t=>{
+    const cat=HIST_CATS[t.concepto];
+    const catKey=cat ? cat.key : 'unknown';
+    const tagLabel=cat ? (cat.key==='gasolina'?'Gas':cat.key==='diesel'?'Diesel':cat.key==='extraccion'?'Extracción':'Abono') : t.concepto;
+    const isAbono=cat && cat.sign>0;
+    const subtotalAbs=Math.abs(t.subtotal||0);
+    const sign=isAbono?'+':'-';
+    const fmt=sign+subtotalAbs.toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:0});
+    return '<tr>'+
+      '<td class="sup" title="'+_escHtml(t.suplidor||'')+'">'+_escHtml(t.suplidor||'')+'</td>'+
+      '<td><span class="db-tag '+catKey+'">'+_escHtml(tagLabel)+'</span></td>'+
+      '<td>'+_escHtml(_dbFormatFecha(t.fecha))+'</td>'+
+      '<td>'+_escHtml(String(t.tiquete||'—'))+'</td>'+
+      '<td class="right '+catKey+'-amt">'+fmt+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// Formatea fecha (cualquier tipo aceptado por _histParseDate) a "DD/MM/YYYY".
+function _dbFormatFecha(raw){
+  const d=_histParseDate(raw);
+  if(!d) return String(raw||'—');
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+
+// Escape HTML simple (suficiente para nombres de suplidor / concepto).
+function _escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>
