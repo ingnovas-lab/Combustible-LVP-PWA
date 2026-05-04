@@ -590,6 +590,16 @@ input[type=date]{color-scheme:dark}
       Cerrar sesion de Drive
     </button>
 
+    <!-- v.0008: forzar actualización (purga SW + caches + reload) -->
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:6px">
+      <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:8px">App</div>
+      <button class="btn" onclick="forceAppUpdate()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Forzar actualización
+      </button>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Si la app parece atascada en una versión vieja, esto borra el caché local y recarga del servidor. No afecta tus datos ni la conexión con Drive.</div>
+    </div>
+
     <div style="font-size:11px;color:var(--text3);text-align:center;border-top:1px solid var(--border);padding-top:14px">
       1,500 analisis gratis por dia &middot; Sin tarjeta requerida
     </div>
@@ -871,7 +881,11 @@ input[type=date]{color-scheme:dark}
 // cambios se hacen directo en el Excel). (b) Pantalla nueva pg-database
 // con tabla compacta de las 309+ transacciones del Excel + buscador.
 // Botón "Ver Base de Datos completa" al final de pg-historico.
-const APP_VERSION = '0007';
+// v.0008 (2026-05-04): service worker (sw.js) network-first para HTML +
+// botón "Forzar actualización" en Settings. Patrón heredado de CajaChica
+// con _withTimeout para que en Safari iOS (donde unregister/caches.delete
+// pueden colgar la promise) el flow no se atasque.
+const APP_VERSION = '0008';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -898,6 +912,15 @@ let entries=[], curPhoto=null, selectedModel='', pendingData=null, lastRaw=''; /
   // llama desde fillForm cuando se abre el confirm — esto cubre el caso de
   // entradas manuales sin pasar por la IA).
   populateSupDatalist();
+  // v.0008: registrar service worker para network-first cache del HTML.
+  // Cuando hay versión nueva en GitHub Pages, la app la recibe en cuanto haya red.
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('./sw.js',{scope:'./'})
+        .then(reg=>console.log('[SW] registrado, scope:',reg.scope))
+        .catch(err=>console.warn('[SW] error al registrar:',err));
+    });
+  }
 })();
 
 /* ── NAVIGATION ── */
@@ -2366,6 +2389,55 @@ function _dbFormatFecha(raw){
 // Escape HTML simple (suficiente para nombres de suplidor / concepto).
 function _escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* v.0008 — Forzar actualización (purga SW + caches + reload)                  */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+// Wrapper Promise.race para evitar que un await cuelgue indefinidamente.
+// Patrón heredado de CajaChica (memoria cajachica_safari_promise_hangs.md):
+// en Safari iOS las APIs de SW (unregister, caches.delete, etc.) pueden
+// no resolver la promise. Si timeout, asumimos que la op se completa
+// en background y seguimos al reload.
+function _withTimeout(promise, ms, label){
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT '+label+' '+ms+'ms')),ms))
+  ]);
+}
+
+async function forceAppUpdate(){
+  if(!confirm('¿Forzar actualización? Esto borra el caché local y recarga del servidor. No afecta tus datos ni Drive.')) return;
+
+  toast('Actualizando...');
+  const TO=2000; // timeout por operación
+
+  // 1. Desregistrar service workers
+  try {
+    if('serviceWorker' in navigator){
+      const regs=await _withTimeout(navigator.serviceWorker.getRegistrations(), TO, 'getRegistrations');
+      if(regs && regs.length){
+        await Promise.all(regs.map(r=>_withTimeout(r.unregister(), TO, 'unregister').catch(()=>{})));
+      }
+    }
+  } catch(e){ console.warn('[forceUpdate] SW unregister:',e.message); }
+
+  // 2. Limpiar caches
+  try {
+    if('caches' in window){
+      const keys=await _withTimeout(caches.keys(), TO, 'caches.keys');
+      if(keys && keys.length){
+        await Promise.all(keys.map(k=>_withTimeout(caches.delete(k), TO, 'caches.delete '+k).catch(()=>{})));
+      }
+    }
+  } catch(e){ console.warn('[forceUpdate] caches:',e.message); }
+
+  // 3. Reload con cache-buster (forzar bypass de cualquier caché HTTP)
+  const url=new URL(location.href);
+  url.searchParams.set('_v', Date.now().toString());
+  // Usamos location.replace para no agregar al history (back button no vuelve a la versión vieja)
+  location.replace(url.toString());
 }
 </script>
 </body>
