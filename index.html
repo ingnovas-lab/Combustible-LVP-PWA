@@ -793,7 +793,13 @@ input[type=date]{color-scheme:dark}
 // Excel. Y la columna SUBTOTAL no tenía formato moneda, por eso aparecía
 // "-1000" en lugar de "-$ 1,000.00". Fix: cambiar a "dd/mm/yyyy" + formato
 // moneda RD con [Red] para negativos. Sin tocar nada más del flow de upload.
-const APP_VERSION = '0005';
+// v.0006 (2026-05-04): hotfix de TIMEZONE en _excelSerialToDate. El serial
+// Excel es una fecha civil sin timezone. new Date(ms) lo interpreta como
+// UTC, lo que en Dominicana (UTC-4) hace que el día anterior aparezca como
+// día actual. Por eso un abono del 01/04/2026 se agrupaba en marzo en el
+// chart. Fix: extraer Y/M/D usando getUTC*() y reconstruir Date local al
+// mediodía para que get*() local retorne el día correcto.
+const APP_VERSION = '0006';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1926,10 +1932,16 @@ function _histParseDate(raw){
 
 // Convierte serial Excel a Date. Excel cuenta días desde 1900-01-01 (con bug
 // del año bisiesto que hace que el offset real sea 25569 desde 1970-01-01).
+// v.0006: el serial Excel es una fecha "civil" sin timezone. new Date(ms) la
+// representa como medianoche UTC, lo cual en zonas horarias negativas (UTC-4
+// en Dominicana) hace que get*() local retorne el día anterior. Fix: extraer
+// Y/M/D en UTC y reconstruir Date local al mediodía → get*() local devuelve
+// el día correcto sin shift de timezone.
 function _excelSerialToDate(num){
   const ms=(num-25569)*86400*1000;
   const d=new Date(ms);
-  return _validateYear(d);
+  if(isNaN(d.getTime())) return null;
+  return _validateYear(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
 }
 
 // Sanity check del año. Rechaza dates fuera de [2000, 2100] para evitar el bug
