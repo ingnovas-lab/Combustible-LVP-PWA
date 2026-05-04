@@ -31,6 +31,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .topbar{display:flex;align-items:center;gap:10px;padding:18px 20px 14px;border-bottom:1px solid var(--border)}
 .topbar-title{font-size:15px;font-weight:600;flex:1}
 .topbar-sub{font-size:11px;color:var(--text2);margin-top:1px}
+
+/* v.0002: topbar widgets (help button + version tag debajo del engranaje) */
+.help-btn{align-self:flex-start;color:var(--amber);font-size:20px;font-weight:700;line-height:1;width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.gear-stack{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;align-self:flex-start}
+.version-tag{font-size:8px;color:var(--text);font-family:var(--mono);line-height:1}
 .back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .icon-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
 
@@ -233,12 +238,18 @@ input[type=date]{color-scheme:dark}
 <!-- PAGE: HOME -->
 <div class="page on" id="pg-home">
   <div class="topbar">
-    <div>
+    <div style="flex:1;min-width:0">
       <div class="topbar-title">&#9981; Combustible LVP</div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">Ing. Joel Novas</div>
     </div>
-    <div class="icon-btn" onclick="show('pg-settings')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <!-- v.0002: botón "?" → guía de uso -->
+    <div class="help-btn" onclick="show('pg-help')" title="Guía de uso">?</div>
+    <!-- v.0002: engranaje + tag de versión debajo (igual que CajaChica) -->
+    <div class="gear-stack">
+      <div class="icon-btn" onclick="show('pg-settings')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </div>
+      <div id="home-version" class="version-tag">v.0002</div>
     </div>
   </div>
   <div class="body">
@@ -337,7 +348,8 @@ input[type=date]{color-scheme:dark}
     </div>
     <div id="cfm-warn" class="alert alert-amber" style="display:none">La IA no extrajo todos los datos. Revisa y completa los campos.</div>
     <div id="cfm-api-err" class="alert alert-red" style="display:none"></div>
-    <div class="field"><div class="lbl">Gasolinera / Suplidor</div><select id="f-sup"></select></div>
+    <!-- v.0002: input libre con autocomplete (datalist combina SUPS hardcoded + suplidores memorizados en localStorage 'lvp5sup') -->
+    <div class="field"><div class="lbl">Gasolinera / Suplidor</div><input type="text" id="f-sup" list="sup-list" placeholder="Buscar o escribir nombre..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase"><datalist id="sup-list"></datalist></div>
     <div class="field"><div class="lbl">Tipo de combustible</div>
       <select id="f-con">
         <option value="GASOLINA PREMIUM">Gasolina Premium</option>
@@ -527,6 +539,50 @@ input[type=date]{color-scheme:dark}
   </div>
 </div>
 
+<!-- PAGE: HELP (v.0002) -->
+<!-- Guía de uso, accesible desde el botón "?" del topbar de pg-home -->
+<div class="page" id="pg-help">
+  <div class="topbar">
+    <div class="back-btn" onclick="show('pg-home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div>
+      <div class="topbar-title">Guía de uso</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Cómo registrar tu combustible</div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:10px">1. Configuración inicial (1 vez)</div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">1</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Sacá tu API Key gratis en <strong>aistudio.google.com</strong> &rarr; "Get API Key"</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">2</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Pegala en Ajustes &rarr; "Guardar y verificar" &rarr; seleccionar modelo Gemini.</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">3</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Conectá tu Google Drive en Ajustes (la app va a actualizar el Excel maestro).</div></div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:10px">2. Registrar un tiquete</div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">1</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Tocá <strong>"Tomar foto"</strong> (cámara) o <strong>"Del carrete"</strong> (galería).</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">2</div><div style="font-size:13px;line-height:1.5;color:var(--text)">La IA lee el tiquete y completa los datos automáticamente.</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">3</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Verificá / corregí los datos. Si el suplidor es nuevo, podés escribirlo libremente — la app lo memoriza para próximas cargas.</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">4</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Tocá <strong>"Guardar"</strong>. El registro queda en "Pendientes" y se appendea al Excel cuando lo subís.</div></div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px">3. Balance y abonos</div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">1</div><div style="font-size:13px;line-height:1.5;color:var(--text)">El balance se calcula sumando ingresos (abonos) menos gastos del Excel en Drive.</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">2</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Tocá el card del balance para ver el gasto histórico segregado por tipo (Gasolina/Diesel) — <em>próximamente en v.0003</em>.</div></div>
+      <div style="display:flex;gap:10px;padding:9px 0;align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">3</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Para registrar un abono (depósito), usá <strong>"+ Registrar ABONO"</strong> del home.</div></div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:10px">4. Edición y correcciones</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6">Para editar o eliminar registros, abrí <strong>Control_de_combustible.xlsx</strong> directamente en Drive. La app no edita el Excel — solo lee y appendea. Cualquier cambio en Drive se reflejará en la próxima actualización del balance.</div>
+    </div>
+
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono)" id="help-footer">v.0002 &middot; Ing. Joel Novas &middot; LVP</div>
+  </div>
+</div>
+
 <!-- DELETE MODAL -->
 <div class="modal-bg" id="modal-del">
   <div class="modal">
@@ -546,10 +602,13 @@ input[type=date]{color-scheme:dark}
 // v.0001 (2026-05-04): primer commit en GitHub. Migrado desde Google AI Studio
 // Applet "Scanner de Gastos LVP" (id fd185ada-5942-4c92-a9b9-2b3284d508d6).
 // Código tomado de Combustible_LVP_original.html (70KB, mismo que combustible-lvp_13.html).
-const APP_VERSION = '0001';
+// v.0002 (2026-05-04): UI topbar (botón "?" + tag de versión), pantalla pg-help,
+// campo Suplidor con autocomplete (<input list> en vez de <select>) que memoriza
+// suplidores nuevos en localStorage 'lvp5sup'.
+const APP_VERSION = '0002';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
-const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR','OTRO'];
-const SK='lvp5',KK='lvp5k',MK='lvp5m';
+const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
+const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
 
 /* ── STATE ── */
 let entries=[], curPhoto=null, delId=null, selectedModel='', pendingData=null, lastRaw='';
@@ -565,6 +624,13 @@ let entries=[], curPhoto=null, delId=null, selectedModel='', pendingData=null, l
     document.getElementById('cfg-active').textContent='✓ Activo: '+m;
     document.getElementById('cfg-active').style.display='block';
   }
+  // v.0002: setear texto de versión dinámicamente en topbar y footer del help.
+  const hv=document.getElementById('home-version'); if(hv) hv.textContent=APP_VERSION_LABEL;
+  const hf=document.getElementById('help-footer'); if(hf) hf.innerHTML=APP_VERSION_LABEL+' · Ing. Joel Novas · LVP';
+  // v.0002: pre-llenar el datalist de suplidores al cargar la app (también se
+  // llama desde fillForm cuando se abre el confirm — esto cubre el caso de
+  // entradas manuales sin pasar por la IA).
+  populateSupDatalist();
 })();
 
 /* ── NAVIGATION ── */
@@ -811,14 +877,38 @@ Devuelve SOLO este JSON sin markdown:
   reader.readAsDataURL(file);
 }
 
+/* ── CUSTOM SUPPLIERS (v.0002) ── */
+// Suplidores que el usuario escribió manualmente (no en SUPS hardcoded).
+// Se memorizan en localStorage para que aparezcan como sugerencias en el datalist
+// la próxima vez. Lista que crece con el uso.
+function getCustomSups(){
+  try{ return JSON.parse(localStorage.getItem(CSK)||'[]'); }catch(e){ return []; }
+}
+function addCustomSup(name){
+  if(!name) return;
+  const clean=String(name).toUpperCase().trim();
+  if(!clean) return;
+  if(SUPS.includes(clean)) return; // ya está en hardcoded, no duplicar
+  const list=getCustomSups();
+  if(list.includes(clean)) return; // ya está en custom
+  list.push(clean);
+  list.sort(); // orden alfabético
+  try{ localStorage.setItem(CSK,JSON.stringify(list)); }catch(e){}
+}
+function populateSupDatalist(){
+  const dl=document.getElementById('sup-list');
+  if(!dl) return;
+  const all=[...SUPS, ...getCustomSups()];
+  dl.innerHTML=all.map(s=>'<option value="'+s+'">').join('');
+}
+
 /* ── FILL CONFIRM FORM ── */
 function fillForm(data,imgUrl){
-  // Suplidor select
+  // Suplidor: input libre con datalist (v.0002)
+  populateSupDatalist();
   const sup=data?.suplidor||'';
-  const matched=matchSup(sup);
-  const sel=document.getElementById('f-sup');
-  sel.innerHTML='<option value="">Seleccionar gasolinera...</option>'+
-    SUPS.map(s=>'<option value="'+s+'"'+(s===matched?' selected':'')+'>'+s+'</option>').join('');
+  const matched=matchSup(sup) || (sup ? sup.toUpperCase().trim() : '');
+  document.getElementById('f-sup').value=matched;
 
   document.getElementById('f-con').value=data?.concepto==='DIESEL PREMIUM'?'DIESEL PREMIUM':'GASOLINA PREMIUM';
   document.getElementById('f-fecha').value=data?.fecha?parseDate(data.fecha):today();
@@ -845,17 +935,21 @@ function fillForm(data,imgUrl){
 
 /* ── SAVE ENTRY ── */
 function saveEntry(){
-  const sup=document.getElementById('f-sup').value.trim();
+  const sup=document.getElementById('f-sup').value.toUpperCase().trim();
   const con=document.getElementById('f-con').value;
   const fecha=document.getElementById('f-fecha').value;
   const tiq=document.getElementById('f-tiq').value.trim()||'-';
   const amt=parseFloat(document.getElementById('f-amt').value);
   const errEl=document.getElementById('cfm-err');
 
-  if(!sup){ errEl.textContent='Selecciona la gasolinera'; errEl.style.display='block'; return; }
+  if(!sup){ errEl.textContent='Escribe la gasolinera'; errEl.style.display='block'; return; }
   if(!amt||amt<=0){ errEl.textContent='Ingresa el monto'; errEl.style.display='block'; return; }
   if(!fecha){ errEl.textContent='Ingresa la fecha'; errEl.style.display='block'; return; }
   errEl.style.display='none';
+
+  // v.0002: si el suplidor es nuevo (no está en SUPS ni en custom), memorizarlo
+  // para que aparezca como sugerencia en el datalist en próximas cargas.
+  addCustomSup(sup);
 
   entries.unshift({
     id:Date.now(), suplidor:sup.toUpperCase(), concepto:con,
