@@ -1041,7 +1041,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0013';
+const APP_VERSION = '0014';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1843,10 +1843,8 @@ function _excelRemoveRow(ws, rowToRemove){
 
 // Sobre-escribe una fila con los datos nuevos. Mismo formato de celdas que uploadToDrive (dd/mm/yyyy + moneda RD$ con [Red]).
 function _excelUpdateRow(ws, rowIdx, e){
-  const dateParts = e.fecha.split('-');
-  const jsDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-  const excelEpoch = new Date(1899, 11, 30);
-  const excelSerial = Math.floor((jsDate - excelEpoch) / (1000 * 60 * 60 * 24));
+  // v.0014: usa el helper _dateStringToExcelSerial (Date.UTC) en lugar de aritmética local-time que daba off-by-one por LMT histórico de Dominicana.
+  const excelSerial = _dateStringToExcelSerial(e.fecha);
 
   ws[XLSX.utils.encode_cell({r: rowIdx, c: 0})] = {t: 's', v: e.suplidor};
   ws[XLSX.utils.encode_cell({r: rowIdx, c: 1})] = {t: 's', v: e.concepto};
@@ -2542,12 +2540,8 @@ async function uploadToDrive(){
     const newEntries=[...entries].reverse(); // oldest first
     let insertRow=lastRow+1;
     newEntries.forEach(e=>{
-      // Convert YYYY-MM-DD to Date object for Excel
-      const dateParts=e.fecha.split('-');
-      const jsDate=new Date(parseInt(dateParts[0]),parseInt(dateParts[1])-1,parseInt(dateParts[2]));
-      // Excel serial date
-      const excelEpoch=new Date(1899,11,30);
-      const excelSerial=Math.floor((jsDate-excelEpoch)/(1000*60*60*24));
+      // v.0014: usa el helper _dateStringToExcelSerial (Date.UTC) en lugar de aritmética local-time que daba off-by-one por LMT histórico de Dominicana.
+      const excelSerial=_dateStringToExcelSerial(e.fecha);
 
       ws[XLSX.utils.encode_cell({r:insertRow,c:0})]={t:'s',v:e.suplidor};
       ws[XLSX.utils.encode_cell({r:insertRow,c:1})]={t:'s',v:e.concepto};
@@ -2703,6 +2697,21 @@ function _excelSerialToDate(num){
   const d=new Date(ms);
   if(isNaN(d.getTime())) return null;
   return _validateYear(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
+}
+
+// v.0014: convierte "YYYY-MM-DD" a serial Excel sin shift de timezone.
+// El patrón viejo (uploadToDrive v.0001 + _excelUpdateRow v.0013) usaba:
+//   Math.floor((new Date(y,m,d) - new Date(1899,11,30)) / 86400000)
+// con ambos Dates en hora local. Eso rompe en Dominicana porque antes de
+// 1933 el país usaba LMT (-04:39:36) y el offset actual es -04:00 fijo.
+// La diferencia de ~40 min hace que el delta no sea múltiplo exacto de
+// 86400000 ms y Math.floor produzca off-by-one en muchas fechas. Date.UTC
+// es estable, ignora timezone, y siempre devuelve el día calendario.
+function _dateStringToExcelSerial(s){
+  const [y, m, d] = s.split('-').map(Number);
+  const utcMs = Date.UTC(y, m-1, d);
+  const epochMs = Date.UTC(1899, 11, 30);
+  return Math.round((utcMs - epochMs) / 86400000);
 }
 
 // Sanity check del año. Rechaza dates fuera de [2000, 2100] para evitar el bug
