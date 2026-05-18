@@ -467,11 +467,14 @@ input[type=date]{color-scheme:dark}
         <option value="DIESEL PREMIUM">Diesel Premium</option>
         <!-- v.0012: 3ª opción para registro manual de extracciones de efectivo (mismo color violeta que la categoría en pg-historico). -->
         <option value="EXTRACCIÓN EFECTIVO">Extracción Efectivo</option>
+        <!-- v.0015: 4ª opción para preservar el concepto ABONO al editar (antes el select solo tenía 3 y HTML caía al primer option, corrompiendo el concepto). -->
+        <option value="ABONO">Abono</option>
       </select>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="field"><div class="lbl">Fecha</div><input type="date" id="f-fecha"></div>
-      <div class="field"><div class="lbl">No. Tiquete</div><input type="text" id="f-tiq" placeholder="####" style="font-family:var(--mono)"></div>
+      <!-- v.0015: label con id para alternar a "No. Tiquete (no aplica)" cuando concepto es ABONO o EXTRACCIÓN. -->
+      <div class="field"><div class="lbl" id="f-tiq-lbl">No. Tiquete</div><input type="text" id="f-tiq" placeholder="####" style="font-family:var(--mono)"></div>
     </div>
     <div class="field">
       <div class="lbl">Monto total (RD$)</div>
@@ -1041,7 +1044,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0014';
+const APP_VERSION = '0015';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1393,6 +1396,9 @@ function fillForm(data,imgUrl){
   // Show raw Gemini response in debug panel
   const dbg=document.getElementById('cfm-debug');
   if(dbg) dbg.textContent=lastRaw||'(sin respuesta de la IA)';
+
+  // v.0015: el campo de tiquete depende del concepto activo. Para foto+IA suele venir GASOLINA/DIESEL → tiquete editable. Si Gemini devuelve otro concepto, igual queda consistente.
+  _updateTiqueteField();
 }
 
 /* ── OPEN MANUAL EXTRACCIÓN (v.0012) ── */
@@ -1406,6 +1412,7 @@ function openManualExtraccion(){
   lastRaw='';
   fillForm(null, null);                                     // sin foto, sin data de Gemini
   document.getElementById('f-con').value='EXTRACCIÓN EFECTIVO';
+  _updateTiqueteField();                                    // v.0015: tras setear concepto, sincroniza tiquete (queda "N/A" disabled)
   document.getElementById('cfm-manual-banner').style.display='block';
   document.getElementById('cfm-warn').style.display='none'; // no es "IA no extrajo datos"; es entrada manual
   show('pg-confirm');
@@ -1472,12 +1479,13 @@ function saveAbono(){
   errEl.style.display='none';
 
   // v.0007: sin campo photo (los abonos nunca tenían foto, pero limpiamos por consistencia)
+  // v.0015: tiquete='N/A' (antes era ''). Coherencia con extracciones y con el comportamiento de pg-confirm.
   entries.unshift({
     id:Date.now(),
     suplidor:sup.toUpperCase(),
     concepto:'ABONO',
     fecha,
-    tiquete:'',
+    tiquete:'N/A',
     subtotal:Math.abs(amt),  // POSITIVE for abonos
     isAbono:true,
     at:new Date().toISOString()
@@ -1778,6 +1786,9 @@ function _loadEditMode(data){
     : 'Modificá los campos y guardá. Los cambios se aplican al pendiente local — no toca Drive.';
   document.getElementById('cfm-edit-banner').style.display = 'block';
   document.getElementById('cfm-save-btn-label').textContent = isDrive ? 'Guardar cambios en Drive' : 'Guardar cambios';
+
+  // v.0015: sincroniza el campo de tiquete con el concepto del registro editado. Si era ABONO → "N/A" disabled; si era GASOLINA/DIESEL → editable.
+  _updateTiqueteField();
 }
 
 // Handler del back-btn de pg-confirm. Limpia _editing para que el siguiente flujo arranque en modo insert.
@@ -1785,6 +1796,30 @@ function _backFromConfirm(){
   _editing = null;
   show('pg-home');
 }
+
+// v.0015: ajusta el campo "No. Tiquete" según el concepto activo. Para ABONO y
+// EXTRACCIÓN EFECTIVO no aplica el tiquete (por definición no hay factura), así
+// que el campo se setea a "N/A" + disabled + label con sufijo "(no aplica)".
+// Para GASOLINA / DIESEL el campo queda editable normal.
+function _updateTiqueteField(){
+  const con = document.getElementById('f-con').value;
+  const tiqEl = document.getElementById('f-tiq');
+  const lblEl = document.getElementById('f-tiq-lbl');
+  const isAbono = con === 'ABONO';
+  const isExtraccion = con === 'EXTRACCIÓN EFECTIVO' || con === 'EXTRACCION EFECTIVO';
+  if(isAbono || isExtraccion){
+    tiqEl.value = 'N/A';
+    tiqEl.disabled = true;
+    if(lblEl) lblEl.textContent = 'No. Tiquete (no aplica)';
+  } else {
+    if(tiqEl.value === 'N/A') tiqEl.value = '';
+    tiqEl.disabled = false;
+    if(lblEl) lblEl.textContent = 'No. Tiquete';
+  }
+}
+
+// Listener registrado al cargar para que cualquier cambio del select ajuste el campo de tiquete en vivo.
+document.getElementById('f-con').addEventListener('change', _updateTiqueteField);
 
 /* ── FINGERPRINT (v.0013) ── */
 // Identificador estable de una fila para matchear cache local vs. Excel descargado en el momento de la edición.
