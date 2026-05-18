@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Combustible">
 <meta name="theme-color" content="#0f172a">
-<title>Combustible LVP</title>
+<title>Control de combustible</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -334,7 +334,7 @@ input[type=date]{color-scheme:dark}
     <div style="flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px">
       <div style="font-size:18px;line-height:1.2;flex-shrink:0">&#9981;</div>
       <div style="min-width:0">
-        <div class="topbar-title">Combustible LVP</div>
+        <div class="topbar-title">Control de combustible</div>
         <div style="font-size:11px;color:var(--text2);margin-top:6px">Ing. Joel Novas</div>
       </div>
     </div>
@@ -738,34 +738,77 @@ input[type=date]{color-scheme:dark}
     </div>
   </div>
   <div class="body">
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px">
-      <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:10px">1. Configuración inicial (1 vez)</div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">1</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Sacá tu API Key gratis en <strong>aistudio.google.com</strong> &rarr; "Get API Key"</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">2</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Pegala en Ajustes &rarr; "Guardar y verificar" &rarr; seleccionar modelo Gemini.</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">3</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Conectá tu Google Drive en Ajustes (la app va a actualizar el Excel maestro).</div></div>
+    <!-- v.0016: guía actualizada al estado actual de la app (8 secciones).
+         Refleja: pg-historico (v.0003), pg-database (v.0007), SW + Forzar
+         actualización (v.0008), autologin 1-tap (v.0011), extracción manual
+         (v.0012), edit/delete dentro de la app (v.0013), abono + tiquete N/A
+         (v.0015). El bloque <style> con clases helper queda al inicio de la
+         page para que el HTML siga compacto. -->
+    <style>
+      .help-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px}
+      .help-card:first-of-type{margin-top:0}
+      .help-title{font-size:13px;font-weight:600;margin-bottom:10px}
+      .help-step{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+      .help-step:last-child{border-bottom:none}
+      .help-num{background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px}
+      .help-text{font-size:13px;line-height:1.5;color:var(--text)}
+      .help-prose{font-size:13px;color:var(--text);line-height:1.6}
+      .help-pill{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.05em;vertical-align:middle}
+      .help-pill.amber{background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.3)}
+      .help-pill.blue{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.3)}
+    </style>
+
+    <div class="help-card">
+      <div class="help-title" style="color:var(--amber)">1. Configuración inicial (1 vez)</div>
+      <div class="help-step"><div class="help-num">1</div><div class="help-text">Sacá tu API Key gratis en <strong>aistudio.google.com</strong> &rarr; "Get API Key".</div></div>
+      <div class="help-step"><div class="help-num">2</div><div class="help-text">Pegala en Ajustes &rarr; "Guardar y verificar" &rarr; seleccioná un modelo Gemini con visión.</div></div>
+      <div class="help-step"><div class="help-num">3</div><div class="help-text">Conectá tu Google Drive en Ajustes (la app va a actualizar el Excel maestro <strong>Control_de_combustible.xlsx</strong>).</div></div>
     </div>
 
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:10px">2. Registrar un tiquete</div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">1</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Tocá <strong>"Tomar foto"</strong> y elegí cámara o galería. Para una extracción de efectivo sin tiquete, usá <strong>"Extracción efectivo"</strong> (botón violeta) y completá los campos a mano.</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">2</div><div style="font-size:13px;line-height:1.5;color:var(--text)">La IA lee el tiquete y completa los datos automáticamente (no aplica en modo manual).</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">3</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Verificá / corregí los datos. Si el suplidor es nuevo, podés escribirlo libremente — la app lo memoriza para próximas cargas.</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">4</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Tocá <strong>"Guardar"</strong>. El registro queda en "Pendientes" y se appendea al Excel cuando lo subís.</div></div>
+    <div class="help-card">
+      <div class="help-title" style="color:var(--green)">2. Registrar un gasto con tiquete</div>
+      <div class="help-step"><div class="help-num">1</div><div class="help-text">Tocá <strong>"Tomar foto"</strong>. iOS muestra Cámara / Galería / Archivo.</div></div>
+      <div class="help-step"><div class="help-num">2</div><div class="help-text">La IA lee el tiquete y completa suplidor, tipo de combustible, fecha, número de tiquete y monto.</div></div>
+      <div class="help-step"><div class="help-num">3</div><div class="help-text">Verificá / corregí. Si el suplidor es nuevo, escribilo libremente — la app lo memoriza para próximas cargas.</div></div>
+      <div class="help-step"><div class="help-num">4</div><div class="help-text">Tocá <strong>"Guardar"</strong>. El registro queda en "Pendientes" y se appendea al Excel cuando lo subís.</div></div>
     </div>
 
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px">3. Balance y abonos</div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">1</div><div style="font-size:13px;line-height:1.5;color:var(--text)">El balance se calcula sumando ingresos (abonos) menos gastos del Excel en Drive.</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">2</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Tocá el card del balance para ver el gasto histórico segregado por tipo (Gasolina/Diesel) — <em>próximamente en v.0003</em>.</div></div>
-      <div style="display:flex;gap:10px;padding:9px 0;align-items:flex-start"><div style="background:var(--blue);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:2px">3</div><div style="font-size:13px;line-height:1.5;color:var(--text)">Para registrar un abono (depósito), usá <strong>"+ Registrar ABONO"</strong> del home.</div></div>
+    <div class="help-card">
+      <div class="help-title" style="color:var(--violet)">3. Extracción de efectivo (sin tiquete)</div>
+      <div class="help-prose">Tocá el botón violeta <strong>"Extracción efectivo"</strong> en el home. El formulario se abre con concepto pre-seleccionado en EXTRACCIÓN EFECTIVO y tiquete fijado en "N/A". Completá suplidor, fecha y monto a mano.</div>
     </div>
 
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:10px">4. Edición y correcciones</div>
-      <div style="font-size:12px;color:var(--text);line-height:1.6">Para editar o eliminar registros, abrí <strong>Control_de_combustible.xlsx</strong> directamente en Drive. La app no edita el Excel — solo lee y appendea. Cualquier cambio en Drive se reflejará en la próxima actualización del balance.</div>
+    <div class="help-card">
+      <div class="help-title" style="color:var(--green)">4. Registrar un abono (depósito)</div>
+      <div class="help-prose">Tocá <strong>"+ Registrar ABONO"</strong> en el home. Mismo formulario sin foto, concepto en ABONO y tiquete en "N/A". El monto suma al balance (signo positivo).</div>
     </div>
 
-    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono)" id="help-footer">v.0002 &middot; Ing. Joel Novas &middot; LVP</div>
+    <div class="help-card">
+      <div class="help-title" style="color:var(--blue)">5. Balance, histórico y base de datos</div>
+      <div class="help-step"><div class="help-num">1</div><div class="help-text">El card de balance arriba muestra el neto (abonos &minus; gastos) del Excel en Drive.</div></div>
+      <div class="help-step"><div class="help-num">2</div><div class="help-text">Tocá el card del balance &rarr; <strong>Gasto histórico</strong>: gráfico por mes / semana / año + 4 categorías (Gasolina, Diesel, Extracción, Abono).</div></div>
+      <div class="help-step"><div class="help-num">3</div><div class="help-text">Al final de Gasto histórico, botón <strong>"Ver Base de Datos completa"</strong> &rarr; tabla con todas las filas y buscador.</div></div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-title" style="color:var(--red)">6. Editar o eliminar un registro</div>
+      <div class="help-prose" style="margin-bottom:10px"><strong>Desde v.0013 podés editar y eliminar dentro de la app.</strong> Tocá cualquier fila — sea en el home (recientes), en Gasto histórico o en la Base de Datos — y abre un modal con preview y 3 opciones: <strong>Editar / Eliminar / Cancelar</strong>.</div>
+      <div class="help-prose" style="margin-bottom:10px">El modal muestra el origen con un pill:</div>
+      <div class="help-prose" style="padding-left:8px;margin-bottom:10px">&bull; <span class="help-pill amber">Pendiente local</span> &mdash; todavía no subiste a Drive. Edit/delete son instantáneos.<br>&bull; <span class="help-pill blue">En Drive</span> &mdash; ya está en el Excel. Edit/delete modifican el Excel en Drive (necesita conexión).</div>
+      <div class="help-prose">Eliminar siempre pide confirmación. Editar reusa el formulario con banner azul.</div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-title" style="color:var(--amber)">7. Sesión expirada (Reconectar)</div>
+      <div class="help-prose">La sesión de Google dura ~1 hora (limitación OAuth en navegador). Cuando expira, la app te lleva a la pantalla <strong>Reconectar</strong> con tu email pre-llenado &mdash; un toque y volvés. No tenés que reconfigurar nada.</div>
+    </div>
+
+    <div class="help-card">
+      <div class="help-title" style="color:var(--blue)">8. Forzar actualización</div>
+      <div class="help-prose">Si la app no muestra los cambios nuevos (versión vieja en caché), andá a <strong>Ajustes &rarr; "Forzar actualización"</strong> (primer botón). Limpia caché, desregistra el service worker y recarga.</div>
+    </div>
+
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text3);font-family:var(--mono)" id="help-footer">v.0016 &middot; Ing. Joel Novas &middot; LVP</div>
   </div>
 </div>
 
@@ -1044,7 +1087,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0015';
+const APP_VERSION = '0016';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
