@@ -7,6 +7,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Combustible">
 <meta name="theme-color" content="#0f172a">
+<!-- v.0017: apple-touch-icon (180x180) con bg #0f172a + emoji ⛽. iOS lo usa
+     cuando el usuario agrega la PWA al home screen. -precomposed cubre iOS
+     viejos. icon-192 / icon-512 quedan para uso futuro (manifest Android). -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon-precomposed" href="apple-touch-icon-precomposed.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
 <title>Control de combustible</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -24,6 +30,27 @@
   --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;max-width:420px;margin:0 auto;position:relative}
+
+/* v.0017: responsive Mac/desktop — solo se activa en pantallas >= 600px.
+   Frame móvil queda intacto (max-width 420px); el viewport amplio gana un
+   gradient radial sutil afuera + bordes laterales en el body para marcar
+   el frame de la app. NO usamos overflow:hidden ni border-radius en body
+   (memoria cajachica_safari_overflow_scroll.md: esa combinación rompe el
+   scroll en Safari Mac con children flex+overflow-y:auto). */
+@media (min-width:600px){
+  html{
+    background:
+      radial-gradient(ellipse at top,rgba(59,130,246,0.08),transparent 60%),
+      radial-gradient(ellipse at bottom,rgba(168,85,247,0.08),transparent 60%),
+      #020617;
+    min-height:100dvh;
+  }
+  body{
+    border-left:1px solid var(--border);
+    border-right:1px solid var(--border);
+    box-shadow:0 0 60px rgba(0,0,0,0.6);
+  }
+}
 
 /* PAGES */
 .page{display:none;flex-direction:column;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom,16px)}
@@ -1087,7 +1114,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0016';
+const APP_VERSION = '0017';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
