@@ -295,6 +295,24 @@ input[type=date]{color-scheme:dark}
 .step-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:white;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tag{display:inline-block;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-family:var(--mono);color:var(--text2);margin:2px;cursor:pointer}
 .tag.sel{border-color:var(--green);color:var(--green);background:#052e16}
+
+/* v.0013: row actions modal */
+.mra-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+.modal-source-pill{font-size:9px;background:var(--bg);padding:3px 7px;border-radius:5px;font-weight:700;letter-spacing:0.06em;white-space:nowrap}
+.modal-source-pill.local{color:var(--amber);border:1px solid #92400e}
+.modal-source-pill.drive{color:#93c5fd;border:1px solid #1e40af}
+.modal-preview{background:var(--bg3);border-radius:10px;padding:11px 12px;margin-bottom:12px}
+.modal-preview-name{font-size:13px;font-weight:600;margin-bottom:5px}
+.modal-preview-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.modal-preview-amt{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:4px}
+.modal-preview-amt.neg{color:#fca5a5}
+.modal-preview-amt.pos{color:#86efac}
+.badge.badge-x{background:rgba(168,85,247,0.15);color:var(--violet);border:1px solid rgba(168,85,247,0.4)}
+
+/* v.0013: hcards y filas de db-tbl clickables. */
+.hcard{cursor:pointer;transition:opacity .12s}
+.hcard:active{opacity:.7}
+.db-tbl td{cursor:pointer}
 </style>
 </head>
 <body>
@@ -366,10 +384,7 @@ input[type=date]{color-scheme:dark}
       </div>
     </div>
 
-    <div class="stats">
-      <div class="stat"><div class="stat-label">Pendientes</div><div class="stat-val amber" id="h-cnt">0</div></div>
-      <div class="stat"><div class="stat-label">Neto por subir</div><div class="stat-val mono" id="h-total">RD$ 0.00</div></div>
-    </div>
+    <!-- v.0013: bloque "Pendientes / Neto por subir" eliminado. La misma información ya aparece dentro del balance hero card (En Drive / Gastos pendientes), no hace falta duplicarla. -->
 
     <!-- v.0012: input único sin capture → iOS Safari muestra sheet nativo (Photo Library / Take Photo or Video / Choose File). Reemplaza los dos inputs separados de v.0001-v.0011. -->
     <input type="file" id="inp-pic" accept="image/*" style="display:none" onchange="onFile(this)">
@@ -420,12 +435,14 @@ input[type=date]{color-scheme:dark}
 <!-- PAGE: CONFIRM -->
 <div class="page" id="pg-confirm">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-home')">
+    <!-- v.0013: back-btn ahora limpia _editing para que la próxima entrada no quede como edit. -->
+    <div class="back-btn" onclick="_backFromConfirm()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <div>
-      <div class="topbar-title">Confirmar registro</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">Verifica y corrige si es necesario</div>
+      <!-- v.0013: IDs en título/subtítulo para alternar entre "Confirmar registro" (insert) y "Editar registro" (edit). -->
+      <div class="topbar-title" id="cfm-title">Confirmar registro</div>
+      <div id="cfm-subtitle" style="font-size:11px;color:var(--text2);margin-top:2px">Verifica y corrige si es necesario</div>
     </div>
   </div>
   <div class="body">
@@ -437,6 +454,10 @@ input[type=date]{color-scheme:dark}
     <!-- v.0012: banner violeta cuando se entra desde el botón "Extracción efectivo" (modo manual sin foto). -->
     <div id="cfm-manual-banner" class="alert" style="display:none;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.4);color:#d8b4fe">
       <strong>Registro manual de extracción</strong><br>Completa los datos abajo. Esta entrada se guardará como categoría <em>Extracción Efectivo</em>.
+    </div>
+    <!-- v.0013: banner azul cuando se entra a editar (local o drive). Textos dinámicos (los setea _loadEditMode). -->
+    <div id="cfm-edit-banner" class="alert" style="display:none;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.4);color:#93c5fd">
+      <strong id="cfm-edit-banner-title">Editando registro</strong><br><span id="cfm-edit-banner-msg">Modificá los campos y guardá.</span>
     </div>
     <!-- v.0002: input libre con autocomplete (datalist combina SUPS hardcoded + suplidores memorizados en localStorage 'lvp5sup') -->
     <div class="field"><div class="lbl">Gasolinera / Suplidor</div><input type="text" id="f-sup" list="sup-list" placeholder="Buscar o escribir nombre..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase"><datalist id="sup-list"></datalist></div>
@@ -459,7 +480,8 @@ input[type=date]{color-scheme:dark}
     <div id="cfm-err" class="alert alert-red" style="display:none"></div>
     <button class="btn btn-green" onclick="saveEntry()" style="padding:15px;font-size:15px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-      Guardar registro
+      <!-- v.0013: label dinámico — "Guardar registro" (insert) / "Guardar cambios" (edit local) / "Guardar cambios en Drive" (edit drive). -->
+      <span id="cfm-save-btn-label">Guardar registro</span>
     </button>
     <details style="margin-top:6px">
       <summary style="font-size:12px;color:var(--text2);cursor:pointer;padding:6px">Ver respuesta de Gemini (diagnostico)</summary>
@@ -640,6 +662,62 @@ input[type=date]{color-scheme:dark}
       <div style="font-size:15px;font-weight:600;margin-bottom:10px" id="drive-result-title"></div>
       <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:14px" id="drive-result-msg"></div>
       <button class="btn btn-green" onclick="closeDriveModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- v.0013: ROW ACTIONS MODAL — aparece al tocar una card de pg-history, home-recent o una fila de pg-database. -->
+<div class="modal-bg" id="modal-row-actions" onclick="if(event.target===this)closeRowActions()">
+  <div class="modal">
+    <div class="mra-head">
+      <span style="font-size:14px;font-weight:600">Acciones del registro</span>
+      <span id="mra-pill" class="modal-source-pill local">PENDIENTE LOCAL</span>
+    </div>
+    <div class="modal-preview">
+      <div id="mra-name" class="modal-preview-name">—</div>
+      <div class="modal-preview-meta">
+        <span id="mra-badge" class="badge badge-g">—</span>
+        <span id="mra-fecha" style="font-size:11px;color:var(--text2)">—</span>
+        <span id="mra-tiq" style="font-size:11px;color:var(--text3);font-family:var(--mono);display:none"></span>
+      </div>
+      <div id="mra-amt" class="modal-preview-amt neg">RD$ 0.00</div>
+    </div>
+    <div id="mra-drive-warn" style="display:none;font-size:11px;color:#fcd34d;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.45">
+      &#9888; Los cambios se aplican directamente al Excel en Drive. Requiere conexión.
+    </div>
+    <div class="modal-btns" style="flex-direction:column;gap:8px">
+      <button class="btn btn-blue" onclick="doEdit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+      <button class="btn btn-red" onclick="doDelete()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Eliminar
+      </button>
+      <button class="btn" onclick="closeRowActions()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- v.0013: CONFIRM DELETE MODAL — segundo paso de la eliminación. -->
+<div class="modal-bg" id="modal-confirm-del" onclick="if(event.target===this)closeConfirmDel()">
+  <div class="modal" style="border-color:#991b1b">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--red);font-size:14px;font-weight:600">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="mcd-title">Eliminar registro</span>
+    </div>
+    <div id="mcd-msg" style="font-size:12px;color:var(--text);line-height:1.55;margin-bottom:12px">¿Eliminar este registro? Esta acción no se puede deshacer desde la app.</div>
+    <div class="modal-preview">
+      <div id="mcd-name" class="modal-preview-name">—</div>
+      <div class="modal-preview-meta">
+        <span id="mcd-badge" class="badge badge-g">—</span>
+        <span id="mcd-fecha" style="font-size:11px;color:var(--text2)">—</span>
+      </div>
+      <div id="mcd-amt" class="modal-preview-amt neg">RD$ 0.00</div>
+    </div>
+    <div class="modal-btns" style="flex-direction:column;gap:8px">
+      <button class="btn btn-red" onclick="confirmDelete()" id="mcd-btn-yes">Sí, eliminar</button>
+      <button class="btn" onclick="closeConfirmDel()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -963,7 +1041,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0012';
+const APP_VERSION = '0013';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1183,6 +1261,7 @@ function resizeImg(url){
 /* ── HANDLE FILE ── */
 async function onFile(input){
   const file=input.files[0]; if(!file) return; input.value='';
+  _editing=null;  // v.0013: flujo de foto nunca es edición; limpiamos por si veníamos de un edit cancelado.
   const key=localStorage.getItem(KK);
   const model=localStorage.getItem(MK);
   if(!key||!model){ toast('Configura tu API Key en ajustes',3000); show('pg-settings'); return; }
@@ -1298,6 +1377,11 @@ function fillForm(data,imgUrl){
   document.getElementById('cfm-api-err').style.display='none';
   // v.0012: banner violeta solo aparece en flujo manual (openManualExtraccion lo activa DESPUÉS). Aquí lo apagamos para que no quede pegado del registro anterior.
   document.getElementById('cfm-manual-banner').style.display='none';
+  // v.0013: reset al modo "Confirmar registro" (insert). _loadEditMode customiza después si es edit.
+  document.getElementById('cfm-edit-banner').style.display='none';
+  document.getElementById('cfm-title').textContent='Confirmar registro';
+  document.getElementById('cfm-subtitle').textContent='Verifica y corrige si es necesario';
+  document.getElementById('cfm-save-btn-label').textContent='Guardar registro';
 
   if(imgUrl){
     document.getElementById('cfm-img').src=imgUrl;
@@ -1316,6 +1400,7 @@ function fillForm(data,imgUrl){
 // en "EXTRACCIÓN EFECTIVO" y banner violeta arriba para indicar modo manual.
 // saveEntry() existente graba la fila tal cual — no requiere lógica especial.
 function openManualExtraccion(){
+  _editing=null;                                            // v.0013: extracción manual nunca es edición
   curPhoto=null;
   pendingData=null;
   lastRaw='';
@@ -1344,12 +1429,30 @@ function saveEntry(){
   // para que aparezca como sugerencia en el datalist en próximas cargas.
   addCustomSup(sup);
 
-  // v.0007: ya no guardamos `photo` en el entry. La foto se usa solo durante
-  // el flujo (Gemini la analiza, el usuario la ve en el confirm), pero no
-  // se persiste en localStorage. Ahorra espacio y simplifica.
+  // v.0013: el signo del subtotal depende del concepto. ABONO es positivo, todo lo demás (gasolina, diesel, extracción) es negativo.
+  const isAbono=con==='ABONO';
+  const signedAmt=isAbono?Math.abs(amt):-Math.abs(amt);
+  const newData={
+    suplidor:sup.toUpperCase(),
+    concepto:con,
+    fecha,
+    tiquete:tiq,
+    subtotal:signedAmt
+  };
+
+  // v.0013: branch edit. Si _editing está activo, mutamos la fila existente (local o drive) en lugar de insertar.
+  if(_editing){
+    if(_editing.source==='local'){
+      _updateLocal(_editing.idOrFp, newData);
+    } else {
+      _updateDrive(_editing.idOrFp, newData);
+    }
+    return; // _updateLocal/_updateDrive cierran el flujo
+  }
+
+  // INSERT (flujo histórico): v.0007 quitó el campo `photo` del entry guardado.
   entries.unshift({
-    id:Date.now(), suplidor:sup.toUpperCase(), concepto:con,
-    fecha, tiquete:tiq, subtotal:-Math.abs(amt),
+    id:Date.now(), ...newData,
     at:new Date().toISOString()
   });
   save(); curPhoto=null; pendingData=null;
@@ -1387,12 +1490,7 @@ function saveAbono(){
 /* ── HOME REFRESH ── */
 function refreshHome(){
   const n=entries.length;
-  const total=entries.reduce((s,e)=>s+e.subtotal,0);
-  document.getElementById('h-cnt').textContent=n;
-  document.getElementById('h-cnt').className='stat-val '+(n>0?'amber':'green');
-  const hTot=document.getElementById('h-total');
-  hTot.textContent=(total>=0?'+ ':'')+fmtA(total);
-  hTot.className='stat-val mono '+(total>=0?(total>0?'green':''):'red');
+  // v.0013: stats "Pendientes" y "Neto por subir" eliminadas del DOM (la misma info vive en el balance hero).
   const hasKey=!!(localStorage.getItem(KK)&&localStorage.getItem(MK));
   document.getElementById('home-nokey').style.display=hasKey?'none':'block';
   document.getElementById('home-bot').style.display=n>0?'flex':'none';
@@ -1403,12 +1501,14 @@ function refreshHome(){
     recent.style.display='block';
     list.innerHTML=entries.slice(0,4).map(e=>{
       const isAbono=e.concepto==='ABONO';
-      const icon=isAbono?'&#128176;':'&#9981;';
-      const tipo=isAbono?'Abono':(e.concepto==='GASOLINA PREMIUM'?'Gasolina':'Diesel');
+      const isExtr=e.concepto==='EXTRACCIÓN EFECTIVO'||e.concepto==='EXTRACCION EFECTIVO';
+      const icon=isAbono?'&#128176;':(isExtr?'&#128181;':'&#9981;');
+      const tipo=isAbono?'Abono':(isExtr?'Extracción':(e.concepto==='GASOLINA PREMIUM'?'Gasolina':'Diesel'));
       const amtClass=isAbono?'entry-amt-pos':'entry-amt';
       const sign=isAbono?'+ ':'';
+      // v.0013: cada card abre el modal de acciones (editar/eliminar) sobre el pendiente local.
       return `
-      <div class="entry">
+      <div class="entry" onclick="_localEntryClick(${e.id})">
         ${e.photo?`<img class="entry-thumb" src="${e.photo}" alt="">`:`<div class="entry-icon">${icon}</div>`}
         <div class="entry-info">
           <div class="entry-name">${e.suplidor}</div>
@@ -1434,12 +1534,15 @@ function refreshHistory(){
   const total=entries.reduce((s,e)=>s+e.subtotal,0);
   body.innerHTML=entries.map(e=>{
     const isAbono=e.concepto==='ABONO';
-    const badgeClass=isAbono?'badge-a':(e.concepto==='DIESEL PREMIUM'?'badge-d':'badge-g');
-    const tipoLabel=isAbono?'Abono':(e.concepto==='GASOLINA PREMIUM'?'Gasolina':'Diesel');
+    const isExtr=e.concepto==='EXTRACCIÓN EFECTIVO'||e.concepto==='EXTRACCION EFECTIVO';
+    // v.0013: badge violeta para extracción (antes caía al else como 'badge-g').
+    const badgeClass=isAbono?'badge-a':(isExtr?'badge-x':(e.concepto==='DIESEL PREMIUM'?'badge-d':'badge-g'));
+    const tipoLabel=isAbono?'Abono':(isExtr?'Extracción Efectivo':(e.concepto==='GASOLINA PREMIUM'?'Gasolina Premium':'Diesel Premium'));
     const amtClass=isAbono?'hcard-amt-pos':'hcard-amt';
     const sign=isAbono?'+ ':'';
+    // v.0013: hcard tapeable → abre modal de acciones (editar/eliminar) sobre el pendiente local.
     return `
-    <div class="hcard">
+    <div class="hcard" onclick="_localEntryClick(${e.id})">
       ${e.photo?`<img class="hcard-img" src="${e.photo}" alt="">`:''}
       <div class="hcard-body">
         <div class="hcard-top">
@@ -1460,10 +1563,409 @@ function refreshHistory(){
     </div>`;
 }
 
-/* v.0007: las funciones askDel/doDel y el modal-del fueron removidos. La app
-   es append-only por diseño — los cambios se hacen directo en el Excel
-   maestro de Drive. */
+/* v.0013: La decisión "append-only" de v.0007 fue revertida a pedido del usuario en sesión 18.
+   Ahora se puede editar/eliminar registros desde la app:
+     - Pendientes locales (entries[] en localStorage): muta el array.
+     - Filas del Excel en Drive: descarga el .xlsx, encuentra la fila por fingerprint, modifica y sube de vuelta.
+   El flujo de modificación al Excel es ATÓMICO: o se aplica todo o nada (PATCH del archivo completo). */
 function closeModal(){ /* legacy: por si algún botón llama a esto, no rompe */ }
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* v.0013 — Editar/Eliminar registros (modal de acciones)                     */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+// Contexto activo del modal de acciones. Lo setea openRowActions, lo consumen doEdit/doDelete/confirmDelete.
+let _modalRowCtx = null;  // { source: 'local'|'drive', idOrFp, data }
+
+// Contexto activo de edición. null = inserción (flujo histórico). Lo setea doEdit, lo consume saveEntry.
+let _editing = null;      // { source: 'local'|'drive', idOrFp }
+
+// Click en una card local (home-recent o pg-history). Recibe el id numérico del entry.
+function _localEntryClick(id){
+  const e = entries.find(x => x.id === id);
+  if(!e){ toast('Registro no encontrado'); return; }
+  openRowActions('local', id, e);
+}
+
+// Click en una fila de pg-database. Recibe el fingerprint base64 + URI encoded.
+function _driveRowClick(fpEnc){
+  const fp = decodeURIComponent(atob(fpEnc));
+  const cache = getHistCache();
+  if(!cache){ toast('Cache vacío. Tocá ↻ para sincronizar.'); return; }
+  const t = cache.transactions.find(x => _makeFingerprint(x) === fp);
+  if(!t){ toast('Fila no encontrada en el cache'); return; }
+  openRowActions('drive', fp, t);
+}
+
+// Abre el modal con la preview del registro y guarda el contexto.
+function openRowActions(source, idOrFp, data){
+  _modalRowCtx = {source, idOrFp, data};
+
+  const concepto = data.concepto || '';
+  const isAbono = concepto === 'ABONO';
+  const isExtr = concepto === 'EXTRACCIÓN EFECTIVO' || concepto === 'EXTRACCION EFECTIVO';
+  const isDiesel = concepto === 'DIESEL PREMIUM';
+
+  const tipoLabel = isAbono ? 'Abono'
+    : isExtr ? 'Extracción Efectivo'
+    : (concepto === 'GASOLINA PREMIUM' ? 'Gasolina Premium' : (isDiesel ? 'Diesel Premium' : concepto));
+  const badgeClass = isAbono ? 'badge-a'
+    : isExtr ? 'badge-x'
+    : (isDiesel ? 'badge-d' : 'badge-g');
+
+  document.getElementById('mra-name').textContent = data.suplidor || '—';
+  const badgeEl = document.getElementById('mra-badge');
+  badgeEl.className = 'badge ' + badgeClass;
+  badgeEl.textContent = tipoLabel;
+  document.getElementById('mra-fecha').textContent = '📅 ' + _dbFormatFecha(data.fecha);
+  const tiqEl = document.getElementById('mra-tiq');
+  if(data.tiquete && data.tiquete !== '-' && data.tiquete !== '—'){
+    tiqEl.style.display = '';
+    tiqEl.textContent = '#' + data.tiquete;
+  } else {
+    tiqEl.style.display = 'none';
+  }
+
+  const amt = parseFloat(data.subtotal) || 0;
+  const amtEl = document.getElementById('mra-amt');
+  amtEl.textContent = (amt >= 0 ? '+ ' : '- ') + fmtA(Math.abs(amt));
+  amtEl.className = 'modal-preview-amt ' + (amt >= 0 ? 'pos' : 'neg');
+
+  const pill = document.getElementById('mra-pill');
+  if(source === 'local'){
+    pill.className = 'modal-source-pill local';
+    pill.textContent = 'PENDIENTE LOCAL';
+    document.getElementById('mra-drive-warn').style.display = 'none';
+  } else {
+    pill.className = 'modal-source-pill drive';
+    pill.textContent = 'EN DRIVE';
+    document.getElementById('mra-drive-warn').style.display = '';
+  }
+
+  document.getElementById('modal-row-actions').classList.add('show');
+}
+
+function closeRowActions(){
+  document.getElementById('modal-row-actions').classList.remove('show');
+}
+
+// "Editar" en el modal → setea _editing, pre-llena pg-confirm y navega.
+function doEdit(){
+  if(!_modalRowCtx) return;
+  const ctx = _modalRowCtx;
+  closeRowActions();
+  _editing = {source: ctx.source, idOrFp: ctx.idOrFp};
+  _loadEditMode(ctx.data);
+  show('pg-confirm');
+}
+
+// "Eliminar" en el modal → muestra el segundo modal de confirmación.
+function doDelete(){
+  if(!_modalRowCtx) return;
+  const ctx = _modalRowCtx;
+  closeRowActions();
+
+  // Llena el modal de confirmación con la misma preview.
+  const data = ctx.data;
+  const concepto = data.concepto || '';
+  const isAbono = concepto === 'ABONO';
+  const isExtr = concepto === 'EXTRACCIÓN EFECTIVO' || concepto === 'EXTRACCION EFECTIVO';
+  const isDiesel = concepto === 'DIESEL PREMIUM';
+  const tipoLabel = isAbono ? 'Abono' : isExtr ? 'Extracción' : (concepto === 'GASOLINA PREMIUM' ? 'Gasolina' : (isDiesel ? 'Diesel' : concepto));
+  const badgeClass = isAbono ? 'badge-a' : isExtr ? 'badge-x' : (isDiesel ? 'badge-d' : 'badge-g');
+
+  document.getElementById('mcd-title').textContent = ctx.source === 'drive' ? 'Eliminar de Drive' : 'Eliminar pendiente';
+  document.getElementById('mcd-msg').innerHTML = ctx.source === 'drive'
+    ? '¿Eliminar este registro <strong>permanentemente</strong> del Excel en Drive? Esta acción reescribe el archivo y no se puede deshacer desde la app.'
+    : '¿Eliminar este pendiente local? Aún no se subió a Drive, así que solo se borra del listado pendiente.';
+  document.getElementById('mcd-btn-yes').textContent = ctx.source === 'drive' ? 'Sí, eliminar de Drive' : 'Sí, eliminar';
+  document.getElementById('mcd-name').textContent = data.suplidor || '—';
+  const badgeEl = document.getElementById('mcd-badge');
+  badgeEl.className = 'badge ' + badgeClass;
+  badgeEl.textContent = tipoLabel;
+  document.getElementById('mcd-fecha').textContent = '📅 ' + _dbFormatFecha(data.fecha);
+  const amt = parseFloat(data.subtotal) || 0;
+  const amtEl = document.getElementById('mcd-amt');
+  amtEl.textContent = (amt >= 0 ? '+ ' : '- ') + fmtA(Math.abs(amt));
+  amtEl.className = 'modal-preview-amt ' + (amt >= 0 ? 'pos' : 'neg');
+
+  // Mantenemos _modalRowCtx para que confirmDelete lo use.
+  document.getElementById('modal-confirm-del').classList.add('show');
+}
+
+function closeConfirmDel(){
+  document.getElementById('modal-confirm-del').classList.remove('show');
+}
+
+async function confirmDelete(){
+  const ctx = _modalRowCtx;
+  closeConfirmDel();
+  if(!ctx) return;
+  if(ctx.source === 'local'){
+    _deleteLocal(ctx.idOrFp);
+  } else {
+    await _doDriveMutation(ctx.idOrFp, 'delete', null);
+  }
+  _modalRowCtx = null;
+}
+
+function _deleteLocal(id){
+  const idx = entries.findIndex(e => e.id === id);
+  if(idx < 0){ toast('Registro no encontrado'); return; }
+  entries.splice(idx, 1);
+  save();
+  refreshHome();
+  refreshHistory();
+  toast('✓ Registro eliminado');
+}
+
+function _updateLocal(id, newData){
+  const idx = entries.findIndex(e => e.id === id);
+  if(idx < 0){ toast('Registro no encontrado'); _editing = null; show('pg-home'); return; }
+  entries[idx] = {...entries[idx], ...newData};
+  save();
+  _editing = null;
+  curPhoto = null;
+  pendingData = null;
+  refreshHome();
+  refreshHistory();
+  toast('✓ Registro actualizado');
+  show('pg-home');
+}
+
+async function _updateDrive(fp, newData){
+  await _doDriveMutation(fp, 'update', newData);
+  _editing = null;
+}
+
+// Pre-llena pg-confirm en modo edición, customiza topbar + banner + botón.
+function _loadEditMode(data){
+  curPhoto = null;
+  pendingData = null;
+  lastRaw = '';
+
+  populateSupDatalist();
+  document.getElementById('f-sup').value = String(data.suplidor || '').toUpperCase();
+  // Si el concepto del Excel viene sin tilde (EXTRACCION), normalizamos a la versión con tilde que es la del select.
+  let con = data.concepto || 'GASOLINA PREMIUM';
+  if(con === 'EXTRACCION EFECTIVO') con = 'EXTRACCIÓN EFECTIVO';
+  document.getElementById('f-con').value = con;
+
+  // Fecha: hay que llevar lo que sea (serial Excel, string, etc.) a YYYY-MM-DD para el <input type=date>.
+  const d = _histParseDate(data.fecha);
+  document.getElementById('f-fecha').value = d
+    ? d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+    : '';
+
+  document.getElementById('f-tiq').value = (data.tiquete && data.tiquete !== '-' && data.tiquete !== '—') ? String(data.tiquete) : '';
+  const amt = Math.abs(parseFloat(data.subtotal) || 0);
+  document.getElementById('f-amt').value = amt > 0 ? amt.toFixed(2) : '';
+
+  // Reset de banners + image wrap
+  document.getElementById('cfm-img-wrap').style.display = 'none';
+  document.getElementById('cfm-warn').style.display = 'none';
+  document.getElementById('cfm-api-err').style.display = 'none';
+  document.getElementById('cfm-manual-banner').style.display = 'none';
+  document.getElementById('cfm-err').style.display = 'none';
+
+  // Customización para modo edit
+  const isDrive = _editing && _editing.source === 'drive';
+  document.getElementById('cfm-title').textContent = 'Editar registro';
+  document.getElementById('cfm-subtitle').textContent = isDrive ? 'En Drive · escribe el Excel' : 'Pendiente local · sin afectar Drive';
+  document.getElementById('cfm-edit-banner-title').textContent = isDrive ? 'Editando registro de Drive' : 'Editando registro';
+  document.getElementById('cfm-edit-banner-msg').textContent = isDrive
+    ? 'Modificá los campos y guardá. El Excel se actualiza directo en Google Drive.'
+    : 'Modificá los campos y guardá. Los cambios se aplican al pendiente local — no toca Drive.';
+  document.getElementById('cfm-edit-banner').style.display = 'block';
+  document.getElementById('cfm-save-btn-label').textContent = isDrive ? 'Guardar cambios en Drive' : 'Guardar cambios';
+}
+
+// Handler del back-btn de pg-confirm. Limpia _editing para que el siguiente flujo arranque en modo insert.
+function _backFromConfirm(){
+  _editing = null;
+  show('pg-home');
+}
+
+/* ── FINGERPRINT (v.0013) ── */
+// Identificador estable de una fila para matchear cache local vs. Excel descargado en el momento de la edición.
+// suplidor + concepto (uppercase trim) + fecha raw + tiquete + subtotal — separados por '|'.
+function _makeFingerprint(t){
+  return [
+    String(t.suplidor || '').toUpperCase().trim(),
+    String(t.concepto || '').toUpperCase().trim(),
+    String(t.fecha == null ? '' : t.fecha),
+    String(t.tiquete == null ? '' : t.tiquete),
+    String(t.subtotal == null ? '' : t.subtotal)
+  ].join('|');
+}
+
+// Busca todas las filas en la hoja BASE DE DATOS que matcheen el fingerprint. Devuelve array de row indices.
+function _findRowInExcel(ws, fingerprint){
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const getCell = (r, c) => { const cell = ws[XLSX.utils.encode_cell({r, c})]; return cell ? cell.v : null; };
+  const matches = [];
+  for(let r = range.s.r; r <= range.e.r; r++){
+    const sub = getCell(r, 4);
+    if(typeof sub !== 'number') continue;
+    const t = {
+      suplidor: getCell(r, 0),
+      concepto: getCell(r, 1),
+      fecha: getCell(r, 2),
+      tiquete: getCell(r, 3),
+      subtotal: sub
+    };
+    if(_makeFingerprint(t) === fingerprint) matches.push(r);
+  }
+  return matches;
+}
+
+// Elimina una fila del worksheet shifteando hacia arriba las siguientes. Preserva formato de las celdas movidas.
+function _excelRemoveRow(ws, rowToRemove){
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for(let r = rowToRemove; r < range.e.r; r++){
+    for(let c = range.s.c; c <= range.e.c; c++){
+      const fromAddr = XLSX.utils.encode_cell({r: r + 1, c});
+      const toAddr = XLSX.utils.encode_cell({r, c});
+      const fromCell = ws[fromAddr];
+      if(fromCell){
+        ws[toAddr] = fromCell;
+      } else {
+        delete ws[toAddr];
+      }
+    }
+  }
+  // Limpia la última fila (ahora duplicada).
+  for(let c = range.s.c; c <= range.e.c; c++){
+    delete ws[XLSX.utils.encode_cell({r: range.e.r, c})];
+  }
+  ws['!ref'] = XLSX.utils.encode_range({s: range.s, e: {r: range.e.r - 1, c: range.e.c}});
+}
+
+// Sobre-escribe una fila con los datos nuevos. Mismo formato de celdas que uploadToDrive (dd/mm/yyyy + moneda RD$ con [Red]).
+function _excelUpdateRow(ws, rowIdx, e){
+  const dateParts = e.fecha.split('-');
+  const jsDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+  const excelEpoch = new Date(1899, 11, 30);
+  const excelSerial = Math.floor((jsDate - excelEpoch) / (1000 * 60 * 60 * 24));
+
+  ws[XLSX.utils.encode_cell({r: rowIdx, c: 0})] = {t: 's', v: e.suplidor};
+  ws[XLSX.utils.encode_cell({r: rowIdx, c: 1})] = {t: 's', v: e.concepto};
+  ws[XLSX.utils.encode_cell({r: rowIdx, c: 2})] = {t: 'n', v: excelSerial, z: 'dd/mm/yyyy'};
+  ws[XLSX.utils.encode_cell({r: rowIdx, c: 3})] = {t: 's', v: String(e.tiquete || '')};
+  ws[XLSX.utils.encode_cell({r: rowIdx, c: 4})] = {t: 'n', v: e.subtotal, z: '"$ "#,##0.00;[Red]"-$ "#,##0.00'};
+}
+
+// Mutación atómica del Excel en Drive: descarga, modifica, sube. action: 'delete' | 'update'.
+async function _doDriveMutation(fp, action, newData){
+  const tok = getGToken();
+  if(!tok){
+    if(localStorage.getItem(EMK)) show('pg-reconnect');
+    else { toast('Conecta Google Drive en Ajustes', 3000); show('pg-settings'); }
+    return;
+  }
+
+  openDriveModal();
+  document.getElementById('drive-title').textContent = action === 'delete' ? 'Eliminando de Drive...' : 'Actualizando Drive...';
+  document.getElementById('drive-steps').innerHTML = '';
+  document.getElementById('drive-progress').style.display = 'block';
+  document.getElementById('drive-result').style.display = 'none';
+
+  try {
+    let fileId = getGFileId();
+    if(!fileId){
+      addStep('Buscando archivo en Drive...');
+      const nameVariants = ['Control_de_combustible.xlsx', 'Control de combustible.xlsx', 'Control_de_Combustible.xlsx', 'Control de Combustible.xlsx', 'CONTROL DE COMBUSTIBLE.xlsx'];
+      for(const name of nameVariants){
+        const q = `name='${name.replace(/'/g, "\\'")}' and trashed=false`;
+        const sRes = await fetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) +
+          '&fields=files(id,name,mimeType)&includeItemsFromAllDrives=true&supportsAllDrives=true&corpora=allDrives',
+          {headers: {'Authorization': 'Bearer ' + tok.access_token}});
+        if(sRes.status === 401){ _authExpired(); throw new Error('Sesión expirada'); }
+        if(!sRes.ok) continue;
+        const sData = await sRes.json();
+        if(sData.files && sData.files.length){ fileId = sData.files[0].id; localStorage.setItem(GFK, fileId); break; }
+      }
+      if(!fileId) throw new Error('Archivo no encontrado en Drive. Refrescá el balance antes.');
+      addStep('Archivo encontrado', true);
+    }
+
+    addStep('Descargando archivo actual...');
+    const dlRes = await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media&supportsAllDrives=true', {
+      headers: {'Authorization': 'Bearer ' + tok.access_token}
+    });
+    if(dlRes.status === 401){ _authExpired(); throw new Error('Sesión expirada'); }
+    if(dlRes.status === 404){ localStorage.removeItem(GFK); throw new Error('Archivo no accesible (ID cache inválido). Tocá ↻ y reintentá.'); }
+    if(!dlRes.ok) throw new Error('No se pudo descargar (HTTP ' + dlRes.status + ')');
+    const buf = await dlRes.arrayBuffer();
+    addStep('Archivo descargado (' + Math.round(buf.byteLength / 1024) + ' KB)', true);
+
+    addStep('Leyendo hoja BASE DE DATOS...');
+    const wb = XLSX.read(buf, {type: 'array', cellDates: false, cellStyles: true});
+    const sheetName = wb.SheetNames.find(n => n.toUpperCase().includes('BASE')) || wb.SheetNames.find(n => n.toUpperCase().includes('DATOS')) || wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    if(!ws) throw new Error('No se encontró la hoja BASE DE DATOS');
+
+    addStep('Buscando fila por huella...');
+    const matches = _findRowInExcel(ws, fp);
+    if(matches.length === 0){
+      throw new Error('Fila no encontrada en el Excel. Es posible que ya fue modificada desde el Excel directamente. Tocá ↻ del balance para refrescar el cache local.');
+    }
+    if(matches.length > 1){
+      throw new Error('Hay ' + matches.length + ' filas idénticas en el Excel. Editá directamente en el archivo para evitar modificar la equivocada.');
+    }
+    const rowIdx = matches[0];
+    addStep('Fila encontrada en la fila ' + (rowIdx + 1) + ' del Excel', true);
+
+    if(action === 'delete'){
+      addStep('Eliminando fila...');
+      _excelRemoveRow(ws, rowIdx);
+    } else {
+      addStep('Aplicando cambios a la fila...');
+      _excelUpdateRow(ws, rowIdx, newData);
+    }
+    addStep('Cambio aplicado en memoria', true);
+
+    addStep('Generando archivo actualizado...');
+    const newBuf = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+    addStep('Archivo generado (' + Math.round(newBuf.byteLength / 1024) + ' KB)', true);
+
+    addStep('Subiendo a Drive...');
+    const upRes = await fetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media&supportsAllDrives=true', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + tok.access_token,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      },
+      body: newBuf
+    });
+    if(upRes.status === 401){ _authExpired(); throw new Error('Sesión expirada'); }
+    if(!upRes.ok) throw new Error('Error HTTP ' + upRes.status + ' al subir');
+    addStep('Archivo subido exitosamente', true);
+
+    document.getElementById('drive-progress').style.display = 'none';
+    document.getElementById('drive-result').style.display = 'block';
+    document.getElementById('drive-result-title').innerHTML = '<span style="color:var(--green)">&#10003; ' + (action === 'delete' ? 'Fila eliminada' : 'Cambios guardados') + '</span>';
+    document.getElementById('drive-result-msg').textContent = action === 'delete'
+      ? 'La fila fue eliminada del Excel en Drive. Refrescando balance...'
+      : 'Los cambios se aplicaron al Excel en Drive. Refrescando balance...';
+
+    // Refrescar balance silencioso para invalidar cache + recargar transacciones del Excel.
+    setTimeout(() => refreshBalance(true), 600);
+    // Auto-close + navegar.
+    setTimeout(() => {
+      closeDriveModal();
+      show('pg-home');
+    }, 1800);
+  } catch(err){
+    addStep('Error: ' + err.message, false);
+    setTimeout(() => {
+      document.getElementById('drive-progress').style.display = 'none';
+      document.getElementById('drive-result').style.display = 'block';
+      document.getElementById('drive-result-title').innerHTML = '<span style="color:var(--red)">&#10007; Error</span>';
+      document.getElementById('drive-result-msg').textContent = err.message;
+    }, 800);
+  }
+}
 
 /* ── EXPORT EXCEL ── */
 function doExport(){
@@ -2544,7 +3046,9 @@ function _dbRenderTable(){
     const subtotalAbs=Math.abs(t.subtotal||0);
     const sign=isAbono?'+':'-';
     const fmt=sign+subtotalAbs.toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:0});
-    return '<tr>'+
+    // v.0013: cada fila abre el modal de acciones sobre la fila del Excel. Fingerprint base64'd para evitar problemas con caracteres especiales en el atributo.
+    const fpEnc=btoa(encodeURIComponent(_makeFingerprint(t)));
+    return '<tr onclick="_driveRowClick(\''+fpEnc+'\')">'+
       '<td class="sup" title="'+_escHtml(t.suplidor||'')+'">'+_escHtml(t.suplidor||'')+'</td>'+
       '<td><span class="db-tag '+catKey+'">'+_escHtml(tagLabel)+'</span></td>'+
       '<td>'+_escHtml(_dbFormatFecha(t.fecha))+'</td>'+
