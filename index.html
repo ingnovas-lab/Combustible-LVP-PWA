@@ -345,6 +345,48 @@ input[type=date]{color-scheme:dark}
 .modal-preview-amt.pos{color:#86efac}
 .badge.badge-x{background:rgba(168,85,247,0.15);color:var(--violet);border:1px solid rgba(168,85,247,0.4)}
 
+/* ============================================================ */
+/* v.0023: skeleton shimmer balance + filtros pg-database        */
+/* (v.0021 originalmente intentó page transitions + PTR, pero    */
+/*  rompieron iOS Safari standalone con pantalla negra — solo    */
+/*  rescatamos las features que NO afectan opacity de .page y    */
+/*  NO agregan listeners touch globales)                          */
+/* ============================================================ */
+
+/* Skeleton shimmer mientras refreshBalance carga */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.balance-amount.loading-skel{
+  background:linear-gradient(90deg,rgba(255,255,255,0.06) 25%,rgba(147,197,253,0.18) 50%,rgba(255,255,255,0.06) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s ease-in-out infinite;
+  color:transparent !important;
+  border-radius:8px;
+  user-select:none;
+}
+
+/* DB filters: pills de categoría + date range */
+.db-filters{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+.db-cat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.db-cat-pill{
+  padding:9px 4px;text-align:center;border-radius:100px;
+  background:var(--bg2);border:1px solid var(--border);
+  font-size:11px;font-weight:600;color:var(--text2);
+  cursor:pointer;user-select:none;letter-spacing:0.02em;
+  transition:all 0.15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.db-cat-pill.gasolina.active{background:rgba(245,158,11,0.18);border-color:var(--amber);color:var(--amber)}
+.db-cat-pill.diesel.active{background:rgba(59,130,246,0.18);border-color:var(--blue);color:var(--blue)}
+.db-cat-pill.extraccion.active{background:rgba(168,85,247,0.18);border-color:var(--violet);color:var(--violet)}
+.db-cat-pill.abono.active{background:rgba(34,197,94,0.18);border-color:var(--green);color:var(--green)}
+.db-date-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.db-date-row input{font-size:13px;padding:10px 12px;color-scheme:dark}
+.db-filters-clear{
+  text-align:center;font-size:12px;color:var(--blue);cursor:pointer;
+  padding:6px;display:none;font-weight:500;
+}
+.db-filters-clear.show{display:block}
+
 /* v.0013: hcards y filas de db-tbl clickables. */
 .hcard{cursor:pointer;transition:opacity .12s}
 .hcard:active{opacity:.7}
@@ -991,6 +1033,20 @@ input[type=date]{color-scheme:dark}
     </div>
   </div>
   <div class="body">
+    <!-- v.0023: filtros (categorías + rango fechas) arriba del buscador. -->
+    <div class="db-filters">
+      <div class="db-cat-row" id="db-cat-row">
+        <div class="db-cat-pill gasolina" role="button" data-cat="gasolina">Gasolina</div>
+        <div class="db-cat-pill diesel" role="button" data-cat="diesel">Diesel</div>
+        <div class="db-cat-pill extraccion" role="button" data-cat="extraccion">Extracción</div>
+        <div class="db-cat-pill abono" role="button" data-cat="abono">Abono</div>
+      </div>
+      <div class="db-date-row">
+        <input type="date" id="db-date-from" aria-label="Desde">
+        <input type="date" id="db-date-to" aria-label="Hasta">
+      </div>
+      <div class="db-filters-clear" id="db-filters-clear" role="button">Limpiar filtros</div>
+    </div>
     <div class="db-search">
       <svg class="db-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="db-search-input" class="db-search-input" placeholder="Buscar suplidor, fecha, tiquete..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
@@ -1123,7 +1179,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0022';
+const APP_VERSION = '0023';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1184,6 +1240,12 @@ function show(id){
     const el=document.getElementById('reconnect-email');
     if(el) el.textContent=email;
   }
+}
+
+/* v.0023: haptic helper. iOS Safari NO soporta Vibration API (ignorado
+   silenciosamente), pero Android Chrome sí. Tap feedback discreto. */
+function _haptic(ms){
+  try{ if(navigator.vibrate) navigator.vibrate(ms||10); }catch(e){}
 }
 
 /* ── TOAST ── */
@@ -2008,8 +2070,12 @@ async function _doDriveMutation(fp, action, newData){
     if(dlRes.status === 401){ _authExpired(); throw new Error('Sesión expirada'); }
     if(dlRes.status === 404){ localStorage.removeItem(GFK); throw new Error('Archivo no accesible (ID cache inválido). Tocá ↻ y reintentá.'); }
     if(!dlRes.ok) throw new Error('No se pudo descargar (HTTP ' + dlRes.status + ')');
+    // v.0023: capturar ETag del response para conditional write en el PATCH.
+    // Si otro write llegó entre nuestro GET y PATCH, Drive devuelve 412 y
+    // avisamos al usuario en lugar de sobrescribir silenciosamente.
+    const fileEtag = dlRes.headers.get('ETag') || dlRes.headers.get('etag') || null;
     const buf = await dlRes.arrayBuffer();
-    addStep('Archivo descargado (' + Math.round(buf.byteLength / 1024) + ' KB)', true);
+    addStep('Archivo descargado (' + Math.round(buf.byteLength / 1024) + ' KB)' + (fileEtag ? ' · ETag ok' : ''), true);
 
     addStep('Leyendo hoja BASE DE DATOS...');
     const wb = XLSX.read(buf, {type: 'array', cellDates: false, cellStyles: true});
@@ -2042,15 +2108,23 @@ async function _doDriveMutation(fp, action, newData){
     addStep('Archivo generado (' + Math.round(newBuf.byteLength / 1024) + ' KB)', true);
 
     addStep('Subiendo a Drive...');
+    // v.0023: conditional write con If-Match (ETag del GET). Si Drive devuelve
+    // 412 Precondition Failed, alguien más modificó el archivo entre medio.
+    const uploadHeaders = {
+      'Authorization': 'Bearer ' + tok.access_token,
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    };
+    if(fileEtag) uploadHeaders['If-Match'] = fileEtag;
     const upRes = await fetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media&supportsAllDrives=true', {
       method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + tok.access_token,
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      },
+      headers: uploadHeaders,
       body: newBuf
     });
     if(upRes.status === 401){ _authExpired(); throw new Error('Sesión expirada'); }
+    if(upRes.status === 412){
+      try { localStorage.removeItem(HK); } catch(e){}
+      throw new Error('CONFLICTO: otro dispositivo modificó el Excel mientras editabas. Tocá ↻ del balance para sincronizar y reintenta.');
+    }
     if(!upRes.ok) throw new Error('Error HTTP ' + upRes.status + ' al subir');
     addStep('Archivo subido exitosamente', true);
 
@@ -2426,8 +2500,11 @@ async function refreshBalance(silent){
 
   const refreshBtn=document.getElementById('btn-refresh-balance');
   const statusEl=document.getElementById('balance-status');
+  const amtEl=document.getElementById('balance-amount');
   refreshBtn.classList.add('spinning');
   statusEl.textContent='Actualizando desde Drive...';
+  // v.0023: shimmer skeleton sobre el monto mientras carga
+  if(amtEl) amtEl.classList.add('loading-skel');
 
   try{
     let fileId=getGFileId();
@@ -2523,6 +2600,8 @@ async function refreshBalance(silent){
   }
 
   refreshBtn.classList.remove('spinning');
+  // v.0023: limpiar shimmer del balance amount
+  if(amtEl) amtEl.classList.remove('loading-skel');
 }
 
 async function uploadToDrive(){
@@ -3079,6 +3158,55 @@ document.addEventListener('DOMContentLoaded',()=>{
       _dbRenderTable();
     });
   }
+
+  // v.0023: pills de categoría (toggle on/off)
+  const catRow=document.getElementById('db-cat-row');
+  if(catRow){
+    catRow.addEventListener('click',(e)=>{
+      const pill=e.target.closest('.db-cat-pill');
+      if(!pill) return;
+      const cat=pill.dataset.cat;
+      if(_dbCatFilter.has(cat)){
+        _dbCatFilter.delete(cat);
+        pill.classList.remove('active');
+      } else {
+        _dbCatFilter.add(cat);
+        pill.classList.add('active');
+      }
+      _haptic(8);
+      _dbRenderTable();
+    });
+  }
+
+  // v.0023: date range inputs
+  const dFrom=document.getElementById('db-date-from');
+  const dTo=document.getElementById('db-date-to');
+  if(dFrom) dFrom.addEventListener('change',()=>{ _dbDateFrom=dFrom.value; _dbRenderTable(); });
+  if(dTo) dTo.addEventListener('change',()=>{ _dbDateTo=dTo.value; _dbRenderTable(); });
+
+  // v.0023: botón Limpiar filtros
+  const clearBtn=document.getElementById('db-filters-clear');
+  if(clearBtn){
+    clearBtn.addEventListener('click',()=>{
+      _dbFilter=''; _dbCatFilter.clear(); _dbDateFrom=''; _dbDateTo='';
+      if(dbInput) dbInput.value='';
+      if(dFrom) dFrom.value='';
+      if(dTo) dTo.value='';
+      document.querySelectorAll('#db-cat-row .db-cat-pill').forEach(p=>p.classList.remove('active'));
+      _haptic(10);
+      _dbRenderTable();
+    });
+  }
+
+  // v.0023: haptic delegado en taps de elementos interactivos comunes.
+  // iOS Safari ignora (Vibration API no soportada); Android Chrome lo dispara.
+  // NOTA: NO usamos capture-phase (a diferencia de v.0021) para evitar
+  // posibles interferencias con el flujo normal de clicks.
+  document.body.addEventListener('click',(e)=>{
+    if(e.target.closest('.btn, .photo-card, .help-btn, .back-btn, .refresh-btn, .hist-pill, .hist-chart-tab')){
+      _haptic(8);
+    }
+  });
 });
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -3086,6 +3214,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ────────────────────────────────────────────────────────────────────────── */
 
 let _dbFilter=''; // texto del buscador (lowercase)
+// v.0023: filtros adicionales (categoría + rango fecha)
+let _dbCatFilter=new Set();    // categorías activas: 'gasolina'|'diesel'|'extraccion'|'abono'
+let _dbDateFrom='';            // 'YYYY-MM-DD' o ''
+let _dbDateTo='';              // 'YYYY-MM-DD' o ''
 
 // Render principal de pg-database. Llamado desde show('pg-database').
 async function renderDatabase(){
@@ -3109,9 +3241,14 @@ async function renderDatabase(){
   document.getElementById('db-tbl-wrap').style.display='';
 
   document.getElementById('db-count').textContent=cache.transactions.length+' transaccion'+(cache.transactions.length!==1?'es':'');
-  // Reset del filtro al entrar (limpia buscador)
+  // v.0023: reset de TODOS los filtros al entrar (texto + categorías + fechas)
   const inp=document.getElementById('db-search-input');
   if(inp){ inp.value=''; _dbFilter=''; }
+  _dbCatFilter.clear();
+  _dbDateFrom=''; _dbDateTo='';
+  document.querySelectorAll('#db-cat-row .db-cat-pill').forEach(p=>p.classList.remove('active'));
+  const dFrom=document.getElementById('db-date-from'); if(dFrom) dFrom.value='';
+  const dTo=document.getElementById('db-date-to'); if(dTo) dTo.value='';
   _dbRenderTable();
 }
 
@@ -3132,16 +3269,42 @@ function _dbRenderTable(){
     return db.getTime()-da.getTime();
   });
 
-  // Filter por buscador
+  // v.0023: filtro combinado (categoría + rango fecha + texto)
   let rows=sorted;
-  if(_dbFilter){
+  const hasCat=_dbCatFilter.size>0;
+  // Parse 'YYYY-MM-DD' → epoch ms en UTC (consistente con la decisión de fechas de v.0014)
+  let fromMs=null, toMs=null;
+  if(_dbDateFrom){
+    const p=_dbDateFrom.split('-');
+    fromMs=Date.UTC(+p[0], +p[1]-1, +p[2]);
+  }
+  if(_dbDateTo){
+    const p=_dbDateTo.split('-');
+    toMs=Date.UTC(+p[0], +p[1]-1, +p[2])+86400000-1;
+  }
+  if(hasCat || fromMs!==null || toMs!==null || _dbFilter){
     const f=_dbFilter;
     rows=sorted.filter(t=>{
-      const sup=String(t.suplidor||'').toLowerCase();
-      const con=String(t.concepto||'').toLowerCase();
-      const tiq=String(t.tiquete||'').toLowerCase();
-      const fechaStr=_dbFormatFecha(t.fecha).toLowerCase();
-      return sup.includes(f) || con.includes(f) || tiq.includes(f) || fechaStr.includes(f);
+      if(hasCat){
+        const cat=HIST_CATS[t.concepto];
+        const catKey=cat ? cat.key : 'unknown';
+        if(!_dbCatFilter.has(catKey)) return false;
+      }
+      if(fromMs!==null || toMs!==null){
+        const d=_histParseDate(t.fecha);
+        if(!d) return false;
+        const ms=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());
+        if(fromMs!==null && ms<fromMs) return false;
+        if(toMs!==null && ms>toMs) return false;
+      }
+      if(f){
+        const sup=String(t.suplidor||'').toLowerCase();
+        const con=String(t.concepto||'').toLowerCase();
+        const tiq=String(t.tiquete||'').toLowerCase();
+        const fechaStr=_dbFormatFecha(t.fecha).toLowerCase();
+        if(!sup.includes(f) && !con.includes(f) && !tiq.includes(f) && !fechaStr.includes(f)) return false;
+      }
+      return true;
     });
   }
 
@@ -3150,9 +3313,14 @@ function _dbRenderTable(){
       ? rows.length+' filas'
       : rows.length+' de '+cache.transactions.length+' filas';
 
+  // v.0023: mostrar/ocultar "Limpiar filtros" según si hay alguno activo
+  const clearEl=document.getElementById('db-filters-clear');
+  if(clearEl) clearEl.classList.toggle('show', hasCat || !!_dbDateFrom || !!_dbDateTo || !!_dbFilter);
+
   // Build HTML
   if(rows.length===0){
-    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);font-style:italic;padding:20px">Sin coincidencias para "'+_escHtml(_dbFilter)+'"</td></tr>';
+    const filterDesc=_dbFilter ? '"'+_escHtml(_dbFilter)+'"' : 'los filtros activos';
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);font-style:italic;padding:20px">Sin coincidencias para '+filterDesc+'</td></tr>';
     return;
   }
   tbody.innerHTML=rows.map(t=>{
