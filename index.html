@@ -13,6 +13,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-icon-precomposed" href="apple-touch-icon-precomposed.png">
 <link rel="icon" type="image/png" href="apple-touch-icon.png">
+<!-- v.0020: Web App Manifest para Android installable + iOS metadata. -->
+<link rel="manifest" href="manifest.json">
 <title>Control de combustible</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -56,15 +58,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .page{display:none;flex-direction:column;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom,16px)}
 .page.on{display:flex}
 
-/* TOP BAR */
-.topbar{display:flex;align-items:center;gap:10px;padding:18px 20px 14px;border-bottom:1px solid var(--border)}
-.topbar-title{font-size:15px;font-weight:600;flex:1}
-.topbar-sub{font-size:11px;color:var(--text2);margin-top:1px}
+/* TOP BAR — v.0020: escalado iOS HIG (botones 44px target) */
+.topbar{display:flex;align-items:center;gap:12px;padding:22px 22px 18px;border-bottom:1px solid var(--border)}
+.topbar-title{font-size:19px;font-weight:600;flex:1;letter-spacing:-0.01em}
+.topbar-sub{font-size:13px;color:var(--text2);margin-top:2px}
 
-/* v.0002: topbar widgets (help button + version tag debajo del engranaje) */
-.help-btn{align-self:flex-start;color:var(--amber);font-size:20px;font-weight:700;line-height:1;width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.gear-stack{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;align-self:flex-start}
-.version-tag{font-size:8px;color:var(--text);font-family:var(--mono);line-height:1}
+/* v.0002: topbar widgets (help button + version tag debajo del engranaje). v.0020: 36→44 target iOS */
+.help-btn{align-self:flex-start;color:var(--amber);font-size:22px;font-weight:700;line-height:1;width:44px;height:44px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.gear-stack{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;align-self:flex-start}
+.version-tag{font-size:10px;color:var(--text);font-family:var(--mono);line-height:1}
 
 /* v.0003: pantalla pg-historico (gasto histórico segregado por categoría) */
 :root{--violet:#a855f7}
@@ -132,14 +134,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .db-tag.extraccion{background:rgba(168,85,247,0.15);color:var(--violet)}
 .db-tag.abono{background:rgba(34,197,94,0.15);color:var(--green)}
 .db-tag.unknown{background:var(--bg3);color:var(--text2)}
-.back-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.icon-btn{width:36px;height:36px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
+/* v.0020: 36→44 target iOS */
+.back-btn{width:44px;height:44px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.icon-btn{width:44px;height:44px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
 
-/* SCROLL AREA */
-.body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+/* SCROLL AREA — v.0020: padding 20→22, gap 14→18 */
+.body{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:18px}
 
-/* BUTTONS */
-.btn{font-family:var(--font);font-size:14px;font-weight:500;padding:13px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;transition:opacity .1s}
+/* BUTTONS — v.0020: padding 13/16→16/18, font 14→15 */
+.btn{font-family:var(--font);font-size:15px;font-weight:500;padding:16px 18px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;transition:opacity .1s}
 .btn:active{opacity:.65}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 .btn-amber{background:#451a03;border-color:#92400e;color:var(--amber)}
@@ -152,8 +155,9 @@ input,select,textarea{font-family:var(--font);font-size:15px;background:var(--bg
 input:focus,select:focus{border-color:var(--amber);outline:none}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
 input[type=date]{color-scheme:dark}
-.field{display:flex;flex-direction:column;gap:6px}
-.lbl{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+/* v.0020: gap 6→8, label 11→13 */
+.field{display:flex;flex-direction:column;gap:8px}
+.lbl{font-size:13px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.08em}
 
 /* CARDS */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
@@ -173,12 +177,12 @@ input[type=date]{color-scheme:dark}
 .stat-val.amber{color:var(--amber)}.stat-val.red{color:var(--red)}.stat-val.green{color:var(--green)}
 .stat-val.mono{font-family:var(--mono);font-size:14px;line-height:1.5}
 
-/* BALANCE HERO */
+/* BALANCE HERO — v.0020: scale up para que el monto sea el foco visual */
 .balance-hero{
   background:linear-gradient(135deg,#1e3a8a 0%,#172554 100%);
   border:1px solid #1e40af;
-  border-radius:16px;
-  padding:18px 18px 14px;
+  border-radius:20px;
+  padding:24px 24px 20px;
   color:#f1f5f9;
   position:relative;
   overflow:hidden;
@@ -192,52 +196,53 @@ input[type=date]{color-scheme:dark}
   pointer-events:none;
 }
 .balance-label{
-  font-size:11px;
+  font-size:13px;
   color:#93c5fd;
   text-transform:uppercase;
-  letter-spacing:.08em;
+  letter-spacing:.1em;
   font-weight:600;
-  margin-bottom:2px;
+  margin-bottom:4px;
 }
 .balance-sub{
-  font-size:11px;
+  font-size:13px;
   color:#60a5fa;
   opacity:0.85;
 }
 .balance-amount{
   font-family:var(--mono);
-  font-size:28px;
+  font-size:40px;
   font-weight:600;
   color:#f1f5f9;
   letter-spacing:-0.02em;
   position:relative;
   z-index:1;
-  margin-top:2px;
+  margin-top:6px;
+  line-height:1.05;
 }
 .balance-amount.positive{color:#86efac}
 .balance-amount.negative{color:#fca5a5}
 .balance-amount.loading{color:#60a5fa}
 .balance-breakdown{
-  margin-top:12px;
-  padding-top:12px;
+  margin-top:16px;
+  padding-top:14px;
   border-top:1px solid rgba(147,197,253,0.2);
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:8px;
   position:relative;
   z-index:1;
 }
 .balance-row{
   display:flex;
   justify-content:space-between;
-  font-size:12px;
+  font-size:13px;
 }
 .balance-row-label{color:#93c5fd}
 .balance-row-val{font-family:var(--mono);color:#f1f5f9;font-weight:500}
 .balance-row-val.red{color:#fca5a5}
 .refresh-btn{
-  width:32px;height:32px;
-  border-radius:8px;
+  width:42px;height:42px;
+  border-radius:11px;
   background:rgba(59,130,246,0.25);
   border:1px solid rgba(147,197,253,0.3);
   display:flex;align-items:center;justify-content:center;
@@ -248,42 +253,46 @@ input[type=date]{color-scheme:dark}
 .refresh-btn:active{opacity:.6}
 .refresh-btn.spinning svg{animation:spin 1s linear infinite}
 
-/* ABONO BUTTON */
+/* ABONO BUTTON — v.0020: scale up + min-height 56 */
 .abono-btn{
   background:#052e16 !important;
   border:1px solid #22c55e !important;
   color:#86efac !important;
-  padding:14px !important;
-  font-weight:500;
+  padding:18px !important;
+  font-size:16px !important;
+  font-weight:600 !important;
+  border-radius:16px !important;
+  min-height:56px;
 }
 
-/* PHOTO BUTTONS */
-.photo-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.photo-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:20px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:opacity .1s}
+/* PHOTO BUTTONS — v.0020: cards más anchas, iconos 60×60, labels más grandes */
+.photo-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.photo-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:16px;padding:26px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity .1s}
 .photo-card:active{opacity:.65}
 .photo-card.primary{background:#451a03;border-color:#92400e}
 /* v.0012: variante violeta para botón "Extracción efectivo" (mismo color de la categoría en el chart de pg-historico) */
 .photo-card.violet{background:rgba(168,85,247,0.13);border-color:rgba(168,85,247,0.45)}
-.photo-card-icon{width:48px;height:48px;border-radius:12px;background:var(--bg3);display:flex;align-items:center;justify-content:center}
+.photo-card-icon{width:60px;height:60px;border-radius:14px;background:var(--bg3);display:flex;align-items:center;justify-content:center}
 .photo-card.primary .photo-card-icon{background:rgba(0,0,0,.2)}
 .photo-card.violet .photo-card-icon{background:rgba(168,85,247,0.2)}
-.photo-card-label{font-size:13px;font-weight:500}
+.photo-card-label{font-size:16px;font-weight:600;letter-spacing:-0.01em}
 .photo-card.primary .photo-card-label{color:var(--amber)}
 .photo-card.violet .photo-card-label{color:var(--violet)}
-.photo-card-sub{font-size:11px;color:var(--text2)}
-.photo-card.primary .photo-card-sub{color:#92400e}
-.photo-card.violet .photo-card-sub{color:rgba(168,85,247,0.75)}
+/* v.0020: sub-text más legible — el #92400e del primary era casi invisible */
+.photo-card-sub{font-size:13px;color:var(--text2)}
+.photo-card.primary .photo-card-sub{color:#c2853b}
+.photo-card.violet .photo-card-sub{color:rgba(168,85,247,0.85)}
 
-/* ENTRY ROWS */
-.entry{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+/* ENTRY ROWS — v.0020: iconos 44×44, tipografía un punto arriba */
+.entry{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .entry:last-child{border-bottom:none}
-.entry-thumb{width:38px;height:38px;border-radius:9px;object-fit:cover;border:1px solid var(--border);flex-shrink:0}
-.entry-icon{width:38px;height:38px;border-radius:9px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.entry-thumb{width:44px;height:44px;border-radius:11px;object-fit:cover;border:1px solid var(--border);flex-shrink:0}
+.entry-icon{width:44px;height:44px;border-radius:11px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
 .entry-info{flex:1;min-width:0}
-.entry-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.entry-meta{font-size:11px;color:var(--text2);margin-top:2px}
-.entry-amt{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--red);flex-shrink:0}
-.entry-amt-pos{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--green);flex-shrink:0}
+.entry-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.entry-amt{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--red);flex-shrink:0}
+.entry-amt-pos{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green);flex-shrink:0}
 
 /* HISTORY CARDS */
 .hcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
@@ -359,18 +368,18 @@ input[type=date]{color-scheme:dark}
   <div class="topbar">
     <!-- v.0010: emoji separado en columna propia → "Ing. Joel Novas" queda alineado debajo de "Combustible LVP", no del emoji. Más respiro vertical. -->
     <div style="flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px">
-      <div style="font-size:18px;line-height:1.2;flex-shrink:0">&#9981;</div>
+      <div style="font-size:24px;line-height:1.2;flex-shrink:0">&#9981;</div>
       <div style="min-width:0">
         <div class="topbar-title">Control de combustible</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:6px">Ing. Joel Novas</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:6px">Ing. Joel Novas</div>
       </div>
     </div>
     <!-- v.0002: botón "?" → guía de uso -->
-    <div class="help-btn" onclick="show('pg-help')" title="Guía de uso">?</div>
+    <div class="help-btn" role="button" aria-label="Guía de uso" onclick="show('pg-help')" title="Guía de uso">?</div>
     <!-- v.0002: engranaje + tag de versión debajo (igual que CajaChica) -->
     <div class="gear-stack">
-      <div class="icon-btn" onclick="show('pg-settings')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <div class="icon-btn" role="button" aria-label="Configuración" onclick="show('pg-settings')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       </div>
       <div id="home-version" class="version-tag">v.0002</div>
     </div>
@@ -389,8 +398,8 @@ input[type=date]{color-scheme:dark}
           <div class="balance-label">Balance disponible</div>
           <div class="balance-sub" id="balance-status">Toca para actualizar</div>
         </div>
-        <div class="refresh-btn" id="btn-refresh-balance" onclick="event.stopPropagation();refreshBalance()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="refresh-icon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        <div class="refresh-btn" role="button" aria-label="Actualizar balance" id="btn-refresh-balance" onclick="event.stopPropagation();refreshBalance()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="refresh-icon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
         </div>
       </div>
       <div class="balance-amount" id="balance-amount">RD$ --</div>
@@ -417,17 +426,17 @@ input[type=date]{color-scheme:dark}
     <input type="file" id="inp-pic" accept="image/*" style="display:none" onchange="onFile(this)">
 
     <div class="photo-row">
-      <div class="photo-card primary" onclick="document.getElementById('inp-pic').click()">
+      <div class="photo-card primary" role="button" aria-label="Tomar foto del tiquete" onclick="document.getElementById('inp-pic').click()">
         <div class="photo-card-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </div>
         <div class="photo-card-label">Tomar foto</div>
         <div class="photo-card-sub">Cámara o galería</div>
       </div>
       <!-- v.0012: botón nuevo "Extracción efectivo" — abre pg-confirm sin foto con concepto pre-seleccionado en EXTRACCIÓN EFECTIVO. -->
-      <div class="photo-card violet" onclick="openManualExtraccion()">
+      <div class="photo-card violet" role="button" aria-label="Registrar extracción de efectivo" onclick="openManualExtraccion()">
         <div class="photo-card-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>
         </div>
         <div class="photo-card-label">Extracción efectivo</div>
         <div class="photo-card-sub">Registro manual</div>
@@ -435,7 +444,7 @@ input[type=date]{color-scheme:dark}
     </div>
 
     <button class="btn abono-btn" onclick="show('pg-abono')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Registrar ABONO
     </button>
 
@@ -463,13 +472,13 @@ input[type=date]{color-scheme:dark}
 <div class="page" id="pg-confirm">
   <div class="topbar">
     <!-- v.0013: back-btn ahora limpia _editing para que la próxima entrada no quede como edit. -->
-    <div class="back-btn" onclick="_backFromConfirm()">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="_backFromConfirm()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <div>
       <!-- v.0013: IDs en título/subtítulo para alternar entre "Confirmar registro" (insert) y "Editar registro" (edit). -->
       <div class="topbar-title" id="cfm-title">Confirmar registro</div>
-      <div id="cfm-subtitle" style="font-size:11px;color:var(--text2);margin-top:2px">Verifica y corrige si es necesario</div>
+      <div id="cfm-subtitle" style="font-size:13px;color:var(--text2);margin-top:2px">Verifica y corrige si es necesario</div>
     </div>
   </div>
   <div class="body">
@@ -487,7 +496,7 @@ input[type=date]{color-scheme:dark}
       <strong id="cfm-edit-banner-title">Editando registro</strong><br><span id="cfm-edit-banner-msg">Modificá los campos y guardá.</span>
     </div>
     <!-- v.0002: input libre con autocomplete (datalist combina SUPS hardcoded + suplidores memorizados en localStorage 'lvp5sup') -->
-    <div class="field"><div class="lbl">Gasolinera / Suplidor</div><input type="text" id="f-sup" list="sup-list" placeholder="Buscar o escribir nombre..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase"><datalist id="sup-list"></datalist></div>
+    <div class="field"><div class="lbl">Gasolinera / Suplidor</div><input type="text" id="f-sup" list="sup-list" placeholder="Buscar o escribir nombre..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next" style="text-transform:uppercase"><datalist id="sup-list"></datalist></div>
     <div class="field"><div class="lbl">Tipo de combustible</div>
       <select id="f-con">
         <option value="GASOLINA PREMIUM">Gasolina Premium</option>
@@ -505,7 +514,7 @@ input[type=date]{color-scheme:dark}
     </div>
     <div class="field">
       <div class="lbl">Monto total (RD$)</div>
-      <input type="number" id="f-amt" placeholder="0.00" min="0" step="0.01" style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--amber)">
+      <input type="number" id="f-amt" placeholder="0.00" min="0" step="0.01" inputmode="decimal" enterkeyhint="done" style="font-family:var(--mono);font-size:28px;font-weight:600;color:var(--amber)">
     </div>
     <div id="cfm-err" class="alert alert-red" style="display:none"></div>
     <button class="btn btn-green" onclick="saveEntry()" style="padding:15px;font-size:15px">
@@ -523,12 +532,12 @@ input[type=date]{color-scheme:dark}
 <!-- PAGE: ABONO -->
 <div class="page" id="pg-abono">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-home')">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="show('pg-home')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <div>
       <div class="topbar-title">Registrar ABONO</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">Ingreso de efectivo al fondo</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">Ingreso de efectivo al fondo</div>
     </div>
   </div>
   <div class="body">
@@ -552,7 +561,7 @@ input[type=date]{color-scheme:dark}
 
     <div class="field">
       <div class="lbl">Monto del abono (RD$)</div>
-      <input type="number" id="ab-amt" placeholder="0.00" min="0" step="0.01" style="font-family:var(--mono);font-size:24px;font-weight:600;color:var(--green)">
+      <input type="number" id="ab-amt" placeholder="0.00" min="0" step="0.01" inputmode="decimal" enterkeyhint="done" style="font-family:var(--mono);font-size:28px;font-weight:600;color:var(--green)">
     </div>
 
     <div id="ab-err" class="alert alert-red" style="display:none"></div>
@@ -567,10 +576,10 @@ input[type=date]{color-scheme:dark}
 <!-- PAGE: HISTORY -->
 <div class="page" id="pg-history">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-home')">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="show('pg-home')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
-    <div><div class="topbar-title">Registros pendientes</div><div style="font-size:11px;color:var(--text2);margin-top:2px" id="hist-sub">0 entradas</div></div>
+    <div><div class="topbar-title">Registros pendientes</div><div style="font-size:13px;color:var(--text2);margin-top:2px" id="hist-sub">0 entradas</div></div>
   </div>
   <div class="body" id="hist-body"></div>
   <div class="bot" style="flex-direction:column;gap:8px">
@@ -585,7 +594,7 @@ input[type=date]{color-scheme:dark}
 <!-- PAGE: SETTINGS -->
 <div class="page" id="pg-settings">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-home')">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="show('pg-home')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <!-- v.0009: "Configuración" con tilde, sin subtitle "Google Gemini · Gratis" -->
@@ -756,12 +765,12 @@ input[type=date]{color-scheme:dark}
 <!-- Guía de uso, accesible desde el botón "?" del topbar de pg-home -->
 <div class="page" id="pg-help">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-home')">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="show('pg-home')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <div>
       <div class="topbar-title">Guía de uso</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">Cómo registrar tu combustible</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">Cómo registrar tu combustible</div>
     </div>
   </div>
   <div class="body">
@@ -845,12 +854,12 @@ input[type=date]{color-scheme:dark}
 <!-- gráfico interactivo Chart.js con tabs Año/Mes/Semana. -->
 <div class="page" id="pg-historico">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-home')">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="show('pg-home')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <div>
       <div class="topbar-title">Gasto histórico</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">Base de datos</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px">Base de datos</div>
     </div>
   </div>
   <div class="body">
@@ -973,18 +982,18 @@ input[type=date]{color-scheme:dark}
 <!-- Buscador filtra por suplidor / fecha / tiquete. -->
 <div class="page" id="pg-database">
   <div class="topbar">
-    <div class="back-btn" onclick="show('pg-historico')">
+    <div class="back-btn" role="button" aria-label="Volver" onclick="show('pg-historico')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
     </div>
     <div>
       <div class="topbar-title">Base de Datos</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px" id="db-count">0 transacciones</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:2px" id="db-count">0 transacciones</div>
     </div>
   </div>
   <div class="body">
     <div class="db-search">
       <svg class="db-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="db-search-input" class="db-search-input" placeholder="Buscar suplidor, fecha, tiquete..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <input type="text" id="db-search-input" class="db-search-input" placeholder="Buscar suplidor, fecha, tiquete..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
     </div>
     <div class="db-stat-line">
       <span>Más recientes arriba</span>
@@ -1114,7 +1123,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0019';
+const APP_VERSION = '0020';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
