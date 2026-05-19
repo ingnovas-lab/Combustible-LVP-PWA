@@ -387,6 +387,53 @@ input[type=date]{color-scheme:dark}
 }
 .db-filters-clear.show{display:block}
 
+/* ============================================================ */
+/* v.0024: Onboarding bottom sheet — solo aparece la 1ª vez      */
+/* (flag lvp5_onb_seen en localStorage). Animation usa transform */
+/* translateY, NO opacity — lección de v.0021 (iOS PWA crash).   */
+/* El overlay es un div standalone, no toca .page.on.            */
+/* ============================================================ */
+@keyframes onb-up{from{transform:translateY(100%)} to{transform:translateY(0)}}
+.onb-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  display:none;align-items:flex-end;justify-content:center;
+  z-index:120;padding:0;
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+}
+.onb-overlay.show{display:flex}
+.onb-sheet{
+  background:var(--bg2);border:1px solid var(--border);
+  border-top-left-radius:24px;border-top-right-radius:24px;
+  padding:24px 22px calc(26px + env(safe-area-inset-bottom,0px));
+  width:100%;max-width:480px;max-height:92%;
+  overflow-y:auto;
+  animation:onb-up 0.3s ease-out;
+  box-shadow:0 -8px 32px rgba(0,0,0,0.5);
+}
+.onb-handle{width:48px;height:5px;background:var(--bg3);border-radius:3px;margin:-8px auto 18px}
+.onb-head{text-align:center;margin-bottom:18px}
+.onb-head h2{font-size:22px;font-weight:600;letter-spacing:-0.01em;margin-bottom:6px}
+.onb-head p{font-size:14px;color:var(--text2);line-height:1.5}
+.onb-steps{display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+.onb-step{display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:14px}
+.onb-step .onb-ico{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.onb-step.onb-amber .onb-ico{background:rgba(245,158,11,0.18);color:var(--amber)}
+.onb-step.onb-violet .onb-ico{background:rgba(168,85,247,0.18);color:var(--violet)}
+.onb-step.onb-green .onb-ico{background:rgba(34,197,94,0.18);color:var(--green)}
+.onb-step.onb-blue .onb-ico{background:rgba(59,130,246,0.18);color:var(--blue)}
+.onb-step .onb-text{flex:1;min-width:0}
+.onb-step .onb-text h3{font-size:15px;font-weight:600;margin-bottom:3px}
+.onb-step .onb-text p{font-size:13px;color:var(--text2);line-height:1.45}
+.onb-cta{
+  padding:16px;background:var(--green);color:#052e16;font-weight:600;font-size:16px;
+  border-radius:16px;border:none;width:100%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:56px;font-family:var(--font);
+  -webkit-tap-highlight-color:transparent;transition:opacity .1s;
+}
+.onb-cta:active{opacity:0.7}
+.onb-footer{margin-top:12px;text-align:center;font-size:12px;color:var(--text3);line-height:1.5}
+
 /* v.0013: hcards y filas de db-tbl clickables. */
 .hcard{cursor:pointer;transition:opacity .12s}
 .hcard:active{opacity:.7}
@@ -1120,6 +1167,50 @@ input[type=date]{color-scheme:dark}
 
 <!-- v.0007: modal-del removido. La app es append-only — los cambios se hacen directo en el Excel. -->
 
+<!-- v.0024: Onboarding overlay (solo aparece la 1ª vez según localStorage.lvp5_onb_seen).
+     Standalone div fuera de .page, no afecta opacity de las pages. -->
+<div class="onb-overlay" id="onb-overlay" role="dialog" aria-modal="true" aria-labelledby="onb-title">
+  <div class="onb-sheet">
+    <div class="onb-handle"></div>
+    <div class="onb-head">
+      <h2 id="onb-title">¡Bienvenido! &#128075;</h2>
+      <p>4 cosas básicas que podés hacer con la app</p>
+    </div>
+    <div class="onb-steps">
+      <div class="onb-step onb-amber">
+        <div class="onb-ico">&#128247;</div>
+        <div class="onb-text">
+          <h3>Tomar foto del tiquete</h3>
+          <p>Sacale foto al tiquete y la IA extrae suplidor, fecha, monto y tipo de combustible automáticamente.</p>
+        </div>
+      </div>
+      <div class="onb-step onb-violet">
+        <div class="onb-ico">&#128184;</div>
+        <div class="onb-text">
+          <h3>Extracción de efectivo</h3>
+          <p>¿Sacaste plata sin tiquete? Registralo a mano con el botón violeta.</p>
+        </div>
+      </div>
+      <div class="onb-step onb-green">
+        <div class="onb-ico">&#128181;</div>
+        <div class="onb-text">
+          <h3>Registrar abono</h3>
+          <p>Cuando ingresás plata al fondo (depósito), tocá <strong>+ Registrar ABONO</strong>.</p>
+        </div>
+      </div>
+      <div class="onb-step onb-blue">
+        <div class="onb-ico">&#128202;</div>
+        <div class="onb-text">
+          <h3>Ver el histórico</h3>
+          <p>Tocá el card del balance para ver el detalle: gráfico, categorías y base de datos completa.</p>
+        </div>
+      </div>
+    </div>
+    <button class="onb-cta" onclick="dismissOnboarding()">Empezar &#10003;</button>
+    <div class="onb-footer">Tocá <strong>?</strong> en cualquier momento para volver a leer la guía completa</div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -1179,7 +1270,7 @@ input[type=date]{color-scheme:dark}
 // Cambios: scope OAuth +email +openid (para obtener el email del usuario),
 // fetch a userinfo después del OAuth para guardar email en localStorage,
 // pantalla pg-reconnect, función _authExpired() centralizada.
-const APP_VERSION = '0023';
+const APP_VERSION = '0024';
 const APP_VERSION_LABEL = 'v.' + APP_VERSION;
 const SUPS=['TOTAL LA VECINA','TOTAL COLOMBIA','TOTAL LA AURORA','TOTAL SAN LUIS','TOTAL SAN ISIDRO','TOTAL JACOBO','TOTAL SAN VICENTE','TOTAL LA NORMAL','TOTAL CHURCHILL','TOTAL LA ESTRELLA','TOTAL LAS LADERAS','TOTAL KENNEDY','TOTAL PEDREGAL','TOTAL HATICO','TOTAL MACAO II','TOTAL CIUDAD MODELO','TOTAL V CENTENARIO','TOTAL BOULEVARD','TOTAL LAS PALOMAS','TOTAL EL CANAL','TOTAL CARRETERA MELLA','TOTAL OZAMA','TOTAL CHARLES','TOTAL LA 27','TOTAL LA AURORA DEL SUR'];
 const SK='lvp5',KK='lvp5k',MK='lvp5m',CSK='lvp5sup'; // CSK = custom suppliers (v.0002)
@@ -1206,6 +1297,8 @@ let entries=[], curPhoto=null, selectedModel='', pendingData=null, lastRaw=''; /
   // llama desde fillForm cuando se abre el confirm — esto cubre el caso de
   // entradas manuales sin pasar por la IA).
   populateSupDatalist();
+  // v.0024: mostrar onboarding la primera vez que el usuario abre la app
+  _maybeShowOnboarding();
   // v.0008: registrar service worker para network-first cache del HTML.
   // Cuando hay versión nueva en GitHub Pages, la app la recibe en cuanto haya red.
   if('serviceWorker' in navigator){
@@ -1246,6 +1339,21 @@ function show(id){
    silenciosamente), pero Android Chrome sí. Tap feedback discreto. */
 function _haptic(ms){
   try{ if(navigator.vibrate) navigator.vibrate(ms||10); }catch(e){}
+}
+
+/* v.0024: onboarding sheet — solo aparece la 1ª vez (flag lvp5_onb_seen). */
+function _maybeShowOnboarding(){
+  try{
+    if(localStorage.getItem('lvp5_onb_seen')) return;
+  }catch(e){ return; } // private mode iOS puede romper localStorage
+  const el=document.getElementById('onb-overlay');
+  if(el) el.classList.add('show');
+}
+function dismissOnboarding(){
+  try{ localStorage.setItem('lvp5_onb_seen','1'); }catch(e){}
+  const el=document.getElementById('onb-overlay');
+  if(el) el.classList.remove('show');
+  _haptic(10);
 }
 
 /* ── TOAST ── */
